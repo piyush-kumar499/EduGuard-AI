@@ -1,0 +1,13 @@
+/freebuff-sites-build/
+/.freebuff/
+
+# Local secrets must never be committed
+.env
+.env.local
+.env*.local
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
