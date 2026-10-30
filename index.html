@@ -1573,6 +1573,86 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { outline: 2px solid var
 }
 
 /* ==========================================================================
+   RECOVERY PATHS, PEER MENTOR, FAIRNESS
+   ========================================================================== */
+.recovery-target {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px; margin-bottom: 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--surface-soft);
+}
+.recovery-target p { font-size: 11.5px; color: var(--muted); line-height: 1.45; margin: 0; }
+.recovery-target strong { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+.recovery-target-value { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.recovery-target-value small { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+
+.recovery-list { display: flex; flex-direction: column; gap: 8px; }
+.recovery-item {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  padding: 11px 12px; border: 1px solid var(--border); border-radius: 11px;
+  background: #fff; font-family: inherit; color: inherit; transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.recovery-item:hover { border-color: var(--border-strong); }
+.recovery-item.is-active { border-color: var(--accent-border); background: var(--accent-soft); box-shadow: var(--shadow-xs); }
+.recovery-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.recovery-item-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.recovery-name { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.recovery-score { font-size: 11px; font-weight: 700; color: var(--accent-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.recovery-sentence { display: block; margin-top: 3px; font-size: 11.5px; line-height: 1.5; color: var(--text-2); }
+.effort { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+.effort-track { flex: 1; height: 5px; border-radius: 99px; background: var(--surface-tint); overflow: hidden; }
+.effort-fill { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+.effort-label { font-size: 10px; font-weight: 600; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.recovery-plan { margin-top: 13px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.recovery-plan-sub { font-size: 11px; color: var(--muted); line-height: 1.5; margin-bottom: 9px; }
+.recovery-weeks { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.recovery-week {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-soft);
+  font-size: 11.5px; color: var(--text-2); line-height: 1.4;
+}
+.recovery-week b { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent-ink); flex: 0 0 auto; }
+.recovery-week span { text-align: right; font-variant-numeric: tabular-nums; }
+.recovery-note { margin-top: 9px; font-size: 10.5px; color: var(--faint); line-height: 1.5; display: flex; gap: 6px; align-items: flex-start; }
+.recovery-none { padding: 12px; border: 1px dashed var(--amber-border); border-radius: 10px; background: var(--amber-soft); }
+.recovery-none p { margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--amber); }
+
+.mentor-card { margin-top: 10px; padding: 11px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-soft); }
+.mentor-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.mentor-title { font-size: 11.5px; font-weight: 700; color: var(--text); }
+.mentor-sub { font-size: 10px; color: var(--muted); }
+.mentor-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.mentor-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+.mentor-id { min-width: 0; }
+.mentor-roll { display: block; font-size: 11.5px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.mentor-meta { display: block; font-size: 10px; color: var(--muted); margin-top: 1px; }
+.mentor-toggle.is-assigned { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
+.mentor-foot { margin-top: 8px; font-size: 10px; color: var(--faint); line-height: 1.5; }
+.mentor-empty { font-size: 11px; color: var(--muted); line-height: 1.55; margin: 0; }
+
+.fair-card { padding: 18px 20px 16px; margin-bottom: 18px; }
+.fair-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.fair-gap { padding: 4px 9px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface-tint); color: var(--muted); font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fair-gap.is-wide { background: var(--amber-soft); border-color: var(--amber-border); color: var(--amber); }
+.fair-rows { display: flex; flex-direction: column; gap: 8px; }
+.fair-row { display: grid; grid-template-columns: 92px 1fr 86px; align-items: center; gap: 10px; }
+.fair-label { font-size: 11.5px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.fair-track { height: 8px; border-radius: 99px; background: var(--surface-tint); overflow: hidden; }
+.fair-fill { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+.fair-value { font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fair-warn { margin-top: 11px; padding: 8px 10px; border: 1px solid var(--amber-border); border-radius: 8px; background: var(--amber-soft); color: var(--amber); font-size: 11px; line-height: 1.5; }
+.fair-note { margin-top: 10px; font-size: 10.5px; color: var(--faint); line-height: 1.5; }
+.fair-empty { font-size: 11.5px; color: var(--muted); }
+
+@media (max-width: 480px) {
+  .fair-row { grid-template-columns: 74px 1fr; }
+  .fair-value { grid-column: 2; text-align: left; }
+  .recovery-week { flex-direction: column; gap: 2px; }
+  .recovery-week span { text-align: left; }
+  .mentor-row { align-items: flex-start; }
+}
+
+/* ==========================================================================
    PRINT
    ========================================================================== */
 .print-area { display: none; }
@@ -1673,6 +1753,19 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { outline: 2px solid var
     </section>
 
     <section class="summary-grid" id="summaryGrid" aria-label="Class summary"></section>
+
+    <section class="card fair-card" aria-labelledby="fairHeading">
+      <div class="fair-head">
+        <div>
+          <p class="eyebrow">Fairness check</p>
+          <h2 class="card-title" id="fairHeading">Flagged share by section</h2>
+          <p class="card-sub">Students who need support or are on watch, as a share of each section.</p>
+        </div>
+        <span class="fair-gap" id="fairGap">Gap —</span>
+      </div>
+      <div class="fair-rows" id="fairnessBody"></div>
+      <p class="fair-note">Scoring uses only attendance, assignments and marks.</p>
+    </section>
 
     <section class="charts-grid" aria-label="Class overview charts">
       <article class="card chart-card">
@@ -2641,6 +2734,162 @@ const RiskEngine = (function () {
 })();
 
 /* ==========================================================================
+   4a. RECOVERY PATH ENGINE
+   Searches attendance / assignment / marks changes using RiskEngine.preview,
+   the same function behind the rule score and the what-if sliders. No second
+   scoring formula exists here on purpose.
+   ========================================================================== */
+const RecoveryPath = (function () {
+  const LIMITS = { attendance: 25, assignments: 30, marks: 15 };
+  const COST = { attendance: 1.0, assignments: 1.2, marks: 2.0 };
+  const ORDER = ['attendance', 'assignments', 'marks'];
+  const TITLES = { 'attendance-first': 'Attendance-first', 'assignments-first': 'Assignments-first', balanced: 'Balanced' };
+  const MAX_COST = LIMITS.attendance * COST.attendance + LIMITS.assignments * COST.assignments + LIMITS.marks * COST.marks;
+  const cache = new Map();
+
+  function targetFor(level) {
+    if (level === 'high') return { score: CONFIG.thresholds.watch, level: 'medium', label: 'Watch closely' };
+    if (level === 'medium') return { score: CONFIG.thresholds.onTrack, level: 'low', label: 'On track' };
+    return null;
+  }
+
+  function startValues(analysis) {
+    return {
+      attendance: clamp(Math.round(analysis.signals.attendance), 0, 100),
+      assignments: clamp(Math.round(analysis.signals.assignments), 0, 100),
+      marks: clamp(Math.round(analysis.signals.avgMarks), 0, 100)
+    };
+  }
+
+  function costOf(delta) {
+    return round1(delta.attendance * COST.attendance + delta.assignments * COST.assignments + delta.marks * COST.marks);
+  }
+
+  function describe(path, start) {
+    const parts = ORDER.filter(function (key) { return path.delta[key] > 0; }).map(function (key) {
+      const label = key === 'marks' ? 'the average marks' : key;
+      return label + ' from ' + start[key] + '% to ' + path.values[key] + '%';
+    });
+    if (!parts.length) return 'No change needed.';
+    if (parts.length === 1) return 'Raise ' + parts[0] + '.';
+    if (parts.length === 2) return 'Raise ' + parts[0] + ' and ' + parts[1] + '.';
+    return 'Raise ' + parts[0] + ', ' + parts[1] + ' and ' + parts[2] + '.';
+  }
+
+  function weeklyFor(path, start) {
+    const metrics = ORDER.filter(function (key) { return path.delta[key] > 0; });
+    const weeks = [];
+    for (let week = 1; week <= 4; week += 1) {
+      const values = {};
+      metrics.forEach(function (key) {
+        values[key] = week === 4
+          ? path.values[key]
+          : Math.round(start[key] + (path.delta[key] * week) / 4);
+      });
+      weeks.push({ week: week, values: values });
+    }
+    return { metrics: metrics, weeks: weeks };
+  }
+
+  function build(student, analysis) {
+    const cacheKey = student.id + '::' + analysis.score + '::' + analysis.level;
+    if (cache.has(cacheKey)) return cache.get(cacheKey);
+
+    const target = targetFor(analysis.level);
+    const start = startValues(analysis);
+    const result = { target: target, start: start, paths: [], possible: false };
+
+    if (!target) {
+      cache.set(cacheKey, result);
+      return result;
+    }
+
+    const max = {
+      attendance: Math.min(LIMITS.attendance, 100 - start.attendance),
+      assignments: Math.min(LIMITS.assignments, 100 - start.assignments),
+      marks: Math.min(LIMITS.marks, 100 - start.marks)
+    };
+    const best = { 'attendance-first': [], 'assignments-first': [], balanced: [] };
+
+    for (let da = 0; da <= max.attendance; da += 1) {
+      for (let db = 0; db <= max.assignments; db += 1) {
+        for (let dm = 0; dm <= max.marks; dm += 1) {
+          const cost = costOf({ attendance: da, assignments: db, marks: dm });
+
+          // Skip anything that cannot enter the top three of any strategy.
+          const lists = [best['attendance-first'], best['assignments-first'], best.balanced];
+          if (lists.every(function (list) { return list.length >= 3; }) &&
+            cost >= Math.max.apply(null, lists.map(function (list) { return list[2].cost; }))) continue;
+
+          const overrides = {
+            attendance: start.attendance + da,
+            assignments: start.assignments + db,
+            avgMarks: start.marks + dm
+          };
+          const preview = RiskEngine.preview(student, overrides);
+          if (preview.score < target.score) continue;
+
+          const candidate = {
+            delta: { attendance: da, assignments: db, marks: dm },
+            values: { attendance: overrides.attendance, assignments: overrides.assignments, marks: overrides.avgMarks },
+            overrides: overrides,
+            score: preview.score,
+            level: preview.level,
+            cost: cost
+          };
+
+          function keep(slot, key) {
+            const list = best[slot];
+            let index = list.length;
+            while (index > 0 && list[index - 1].cost > cost) index -= 1;
+            if (index >= 3) return;
+            list.splice(index, 0, Object.assign({}, candidate, { key: key, title: TITLES[key] }));
+            if (list.length > 3) list.length = 3;
+          }
+
+          if (da > 0 && da >= db && da >= dm) keep('attendance-first', 'attendance-first');
+          if (db > 0 && db >= da && db >= dm) keep('assignments-first', 'assignments-first');
+
+          const na = da / LIMITS.attendance;
+          const nb = db / LIMITS.assignments;
+          const nm = dm / LIMITS.marks;
+          const spread = Math.max(na, nb, nm) - Math.min(na, nb, nm);
+          const changed = (da > 0 ? 1 : 0) + (db > 0 ? 1 : 0) + (dm > 0 ? 1 : 0);
+          if (changed >= 2 && spread <= 0.18) keep('balanced', 'balanced');
+        }
+      }
+    }
+
+    const used = {};
+    ['attendance-first', 'assignments-first', 'balanced'].forEach(function (slot) {
+      const path = best[slot].filter(function (item) {
+        const signature = item.delta.attendance + '-' + item.delta.assignments + '-' + item.delta.marks;
+        return !used[signature];
+      })[0];
+      if (!path) return;
+      used[path.delta.attendance + '-' + path.delta.assignments + '-' + path.delta.marks] = true;
+      path.sentence = describe(path, start);
+      path.effortPercent = clamp(Math.round((path.cost / MAX_COST) * 100), 0, 100);
+      path.weekly = weeklyFor(path, start);
+      result.paths.push(path);
+    });
+
+    result.paths.sort(function (a, b) { return a.cost - b.cost; });
+    result.possible = result.paths.length > 0;
+    cache.set(cacheKey, result);
+    return result;
+  }
+
+  return {
+    build: build,
+    targetFor: targetFor,
+    clearCache: function () { cache.clear(); },
+    LIMITS: LIMITS,
+    MAX_COST: MAX_COST
+  };
+})();
+
+/* ==========================================================================
    4b. RISK FORECAST
    A tiny logistic regression trained in the browser on a noisy, synthetic
    hidden process. This is deliberately separate from the rule score:
@@ -3064,7 +3313,9 @@ const state = {
   source: { label: 'Demo class', kind: 'demo' },
   checks: new Map(),
   notes: new Map(),
-  aiPlans: new Map()
+  aiPlans: new Map(),
+  recoveryPicks: new Map(),
+  mentorAssignments: new Map()
 };
 
 const els = {};
@@ -3083,7 +3334,7 @@ function cacheElements() {
     'drawerBackdrop', 'printBtn', 'howModal', 'importModal', 'toastStack', 'printArea', 'csvInput',
     'dropzone', 'chooseFileBtn', 'importError', 'importStatus', 'resetDemoBtn', 'downloadSample',
     'priorityList', 'priorityCount', 'heatmapWrap', 'heatSub', 'weeklyBtn', 'weeklyModal', 'weeklyBody',
-    'forecastAccuracy'
+    'forecastAccuracy', 'fairnessBody', 'fairGap'
   ].forEach(function (id) { els[id] = document.getElementById(id); });
 }
 
@@ -3251,6 +3502,53 @@ function renderPriority() {
       '<button class="btn btn-ghost btn-sm" type="button" data-view-student="' + escapeHTML(student.id) + '" aria-label="View ' +
       escapeHTML(student.roll) + ' in the student panel">View</button></div>';
   }).join('');
+}
+
+/* ---------- fairness check ---------- */
+function fairnessStats() {
+  const rows = state.sections.map(function (section) {
+    const list = state.students.filter(function (student) { return student.section === section; });
+    let flagged = 0;
+    list.forEach(function (student) {
+      const analysis = state.analysis.get(student.id);
+      if (analysis && analysis.level !== 'low') flagged += 1;
+    });
+    return {
+      section: section,
+      total: list.length,
+      flagged: flagged,
+      share: list.length ? round1((flagged / list.length) * 100) : 0
+    };
+  }).filter(function (row) { return row.total > 0; });
+
+  const shares = rows.map(function (row) { return row.share; });
+  const gap = shares.length > 1 ? round1(Math.max.apply(null, shares) - Math.min.apply(null, shares)) : 0;
+  return { rows: rows, gap: gap, warning: gap > 15 };
+}
+
+function renderFairness() {
+  if (!els.fairnessBody) return;
+  const stats = fairnessStats();
+
+  if (!stats.rows.length) {
+    els.fairnessBody.innerHTML = '<p class="fair-empty">No sections to compare yet. Upload a CSV or restore the demo class.</p>';
+    if (els.fairGap) {
+      els.fairGap.textContent = 'Gap —';
+      els.fairGap.classList.remove('is-wide');
+    }
+    return;
+  }
+
+  els.fairnessBody.innerHTML = stats.rows.map(function (row) {
+    return '<div class="fair-row"><span class="fair-label">Section ' + escapeHTML(row.section) + '</span>' +
+      '<span class="fair-track" role="img" aria-label="Section ' + escapeHTML(row.section) + ': ' + row.share + '% flagged"><span class="fair-fill" style="width:' + clamp(row.share, 0, 100) + '%"></span></span>' +
+      '<span class="fair-value">' + row.share + '% · ' + row.flagged + ' of ' + row.total + '</span></div>';
+  }).join('') + (stats.warning ? '<p class="fair-warn">' + ICONS.info + ' Large gap between sections, review context.</p>' : '');
+
+  if (els.fairGap) {
+    els.fairGap.textContent = 'Gap ' + stats.gap + ' pts';
+    els.fairGap.classList.toggle('is-wide', stats.warning);
+  }
 }
 
 /* ---------- class heatmap ---------- */
@@ -3566,6 +3864,7 @@ function syncSortControls() {
 function renderAll() {
   renderPriority();
   renderSummary();
+  renderFairness();
   renderCharts();
   renderHeatmap();
   renderRiskChips();
@@ -3590,6 +3889,7 @@ function populateSectionSelect() {
 }
 
 function refreshData() {
+  RecoveryPath.clearCache();
   state.students = DataService.getStudents();
   state.sections = DataService.getSections();
   state.source = DataService.getSource();
@@ -3723,6 +4023,7 @@ function factorsPanel(analysis) {
 function planPanel(student, analysis) {
   const total = analysis.interventions.length;
   let done = 0;
+  const hasMentorItem = analysis.interventions.some(function (item) { return item.id === 'peer-mentor'; });
   const items = analysis.interventions.map(function (item) {
     const key = planKey(student.id, item.id);
     const checked = state.checks.get(key) === true;
@@ -3734,6 +4035,7 @@ function planPanel(student, analysis) {
       '<div class="plan-body"><div class="plan-top"><h4 class="plan-title">' + escapeHTML(item.title) + '</h4>' +
       '<span class="priority priority--' + item.priority.toLowerCase() + '">' + item.priority + '</span></div>' +
       '<p class="plan-detail">' + escapeHTML(item.detail) + '</p>' +
+      (item.id === 'peer-mentor' ? mentorBlock(student, analysis) : '') +
       '<textarea class="plan-note" data-note data-intervention="' + escapeHTML(item.id) + '" rows="2" placeholder="Add a short note (saved for this session)">' +
       escapeHTML(note) + '</textarea></div></li>';
   }).join('');
@@ -3743,6 +4045,7 @@ function planPanel(student, analysis) {
     '<div class="plan-head"><span style="font-size:11.5px;color:var(--muted)">Tick off what you have started</span>' +
     '<span class="plan-progress" id="planProgress">' + done + ' of ' + total + ' done</span></div>' +
     '<ul class="plan-list">' + items + '</ul>' +
+    (hasMentorItem ? '' : mentorBlock(student, analysis)) +
     '<p class="plan-foot-note">' + ICONS.info + ' Notes stay in memory for this session only.</p></section>';
 }
 
@@ -4129,7 +4432,7 @@ async function generateWeeklySummary() {
 
 function aiPanel(student, analysis) {
   return '<section class="panel" id="sec-ai" aria-labelledby="aiTitle">' +
-    drawerSectionHead('06', '<span id="aiTitle">AI support plan</span>', 'A draft to adapt. Only anonymous numbers are sent.') +
+    drawerSectionHead('07', '<span id="aiTitle">AI support plan</span>', 'A draft to adapt. Only anonymous numbers are sent.') +
     '<div id="aiPanelBody">' + renderAiPanelBody(student, analysis) + '</div></section>';
 }
 
@@ -4161,16 +4464,175 @@ function simulatorPanel(student, analysis) {
     'Print student report</button></section>';
 }
 
+/* ---------- path to recovery ---------- */
+function recoveryPanel(student, analysis) {
+  if (analysis.level === 'low') return '';
+  return '<section class="panel" id="sec-recovery" aria-labelledby="recoveryTitle">' +
+    drawerSectionHead('06', '<span id="recoveryTitle">Path to recovery</span>', 'The smallest realistic changes that reach the next band. A suggestion, not a promise.') +
+    '<div id="recoveryBody">' + recoveryBody(student, analysis) + '</div></section>';
+}
+
+function recoveryBody(student, analysis) {
+  const data = RecoveryPath.build(student, analysis);
+  if (!data.target) return '';
+
+  if (!data.possible) {
+    return '<div class="recovery-none"><p>Within the current limits, changing attendance, assignments and marks may not reach the next band. A short teacher meeting to review the context is likely the better next step.</p></div>';
+  }
+
+  const picked = data.paths.filter(function (path) {
+    return path.key === state.recoveryPicks.get(student.id);
+  })[0] || data.paths[0];
+
+  const rows = data.paths.map(function (path) {
+    const active = path.key === picked.key;
+    return '<button type="button" class="recovery-item' + (active ? ' is-active' : '') + '" data-recovery-pick="' + path.key + '" aria-pressed="' + active + '">' +
+      '<span class="recovery-item-top"><span class="recovery-name">' + escapeHTML(path.title) + '</span>' +
+      '<span class="recovery-score">' + formatNumber(path.score) + ' / 100</span></span>' +
+      '<span class="recovery-sentence">' + escapeHTML(path.sentence) + '</span>' +
+      '<span class="effort"><span class="effort-track"><span class="effort-fill" style="width:' + path.effortPercent + '%"></span></span>' +
+      '<span class="effort-label">Effort ' + formatNumber(path.cost) + ' / ' + formatNumber(RecoveryPath.MAX_COST) + '</span></span></button>';
+  }).join('');
+
+  const weeks = picked.weekly.weeks.map(function (week) {
+    const text = picked.weekly.metrics.map(function (key) {
+      const label = key === 'marks' ? 'average marks' : key;
+      return label + ' ' + week.values[key] + '%';
+    }).join(' · ');
+    return '<li class="recovery-week"><b>Week ' + week.week + '</b><span>' + escapeHTML(text) + '</span></li>';
+  }).join('');
+
+  return '<div class="recovery-target"><div><p>Current score <strong>' + formatNumber(analysis.score) + '</strong> · next band <strong>' +
+    escapeHTML(data.target.label) + '</strong> at ' + formatNumber(data.target.score) + '</p></div>' +
+    '<span class="recovery-target-value">' + formatNumber(picked.score) + '<small> / 100</small></span></div>' +
+    '<div class="recovery-list" role="group" aria-label="Recovery path options">' + rows + '</div>' +
+    '<div class="recovery-plan"><p class="recovery-plan-sub">4-week plan · ' + escapeHTML(picked.title.toLowerCase()) + ' · evenly spaced targets</p>' +
+    '<ol class="recovery-weeks">' + weeks + '</ol>' +
+    '<button class="btn btn-primary btn-block" type="button" data-recovery-apply="' + picked.key + '">Apply to what-if</button>' +
+    '<p class="recovery-note">' + ICONS.info + ' <span>Suggestion for teacher and student, not a guarantee. Check the context before sharing.</span></p></div>';
+}
+
+function refreshRecovery() {
+  if (!state.selectedId) return;
+  const student = DataService.getStudent(state.selectedId);
+  const analysis = state.analysis.get(state.selectedId);
+  const body = els.drawer.querySelector('#recoveryBody');
+  if (!student || !analysis || !body) return;
+  body.innerHTML = recoveryBody(student, analysis);
+}
+
+function applyRecoveryPath(studentId, key) {
+  const student = DataService.getStudent(studentId);
+  const analysis = state.analysis.get(studentId);
+  if (!student || !analysis) return;
+  const data = RecoveryPath.build(student, analysis);
+  const path = data.paths.filter(function (item) { return item.key === key; })[0] || data.paths[0];
+  if (!path) return;
+
+  [['attendance', path.overrides.attendance], ['assignments', path.overrides.assignments], ['marks', path.overrides.avgMarks]].forEach(function (pair) {
+    const input = els.drawer.querySelector('[data-sim="' + pair[0] + '"]');
+    if (input) input.value = String(pair[1]);
+  });
+  updateSimulator();
+  const sim = document.getElementById('sec-sim');
+  if (sim) sim.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  toast('Recovery path loaded into the what-if simulator.', 'success');
+}
+
+/* ---------- peer mentor match ---------- */
+function subjectScoreOf(student, subject) {
+  const analysis = state.analysis.get(student.id);
+  if (!analysis) return 0;
+  const row = analysis.signals.subjectAverages.filter(function (item) { return item.subject === subject; })[0];
+  return row ? row.value : 0;
+}
+
+function mentorMatches(student, analysis) {
+  const subject = analysis.signals.weakest.subject;
+  return state.students.filter(function (candidate) {
+    if (candidate.id === student.id || candidate.section !== student.section) return false;
+    const other = state.analysis.get(candidate.id);
+    if (!other || other.level !== 'low') return false;
+    return subjectScoreOf(candidate, subject) >= 80 && Number(candidate.assignments) >= 85;
+  }).map(function (candidate) {
+    return { student: candidate, score: subjectScoreOf(candidate, subject) };
+  }).sort(function (a, b) { return b.score - a.score; }).slice(0, 2);
+}
+
+function mentorLoad(mentorId) {
+  let count = 0;
+  state.mentorAssignments.forEach(function (assignedId) {
+    if (assignedId === mentorId) count += 1;
+  });
+  return count;
+}
+
+function mentorIsAssigned(studentId, mentorId) {
+  return state.mentorAssignments.get(studentId) === mentorId;
+}
+
+function mentorBlock(student, analysis) {
+  const subject = analysis.signals.weakest.subject;
+  const matches = mentorMatches(student, analysis);
+  const assignedTo = state.mentorAssignments.get(student.id);
+
+  const rows = matches.map(function (match) {
+    const assigned = assignedTo === match.student.id;
+    return '<li class="mentor-row"><div class="mentor-id">' +
+      '<span class="mentor-roll">' + escapeHTML(match.student.roll) + '</span>' +
+      '<span class="mentor-meta">Section ' + escapeHTML(match.student.section) + ' · ' + escapeHTML(subject) + ' ' +
+      Math.round(match.score) + '% · Assignments ' + Math.round(Number(match.student.assignments) || 0) + '%</span></div>' +
+      '<button class="btn btn-ghost btn-sm mentor-toggle' + (assigned ? ' is-assigned' : '') + '" type="button" data-mentor-toggle="' +
+      escapeHTML(match.student.id) + '" aria-pressed="' + assigned + '">' +
+      (assigned ? 'Assigned · remove' : 'Mark as assigned') + '</button></li>';
+  }).join('');
+
+  const body = matches.length
+    ? '<ul class="mentor-list">' + rows + '</ul>'
+    : '<p class="mentor-empty">No peer mentor match in this section for ' + escapeHTML(subject) + ' yet. A teacher-led study pair can work just as well.</p>';
+
+  return '<div class="mentor-card" id="mentorBlock"><div class="mentor-head">' +
+    '<span class="mentor-title">Peer mentor match · ' + escapeHTML(subject) + '</span>' +
+    '<span class="mentor-sub">' + (assignedTo ? 'Marked for this session' : 'Up to 2 per mentor') + '</span></div>' +
+    body + '<p class="mentor-foot">Low-risk peers from the same section, chosen for this subject and steady assignment habits. Each mentor supports at most 2 students.</p></div>';
+}
+
+function toggleMentor(studentId, mentorId) {
+  if (state.mentorAssignments.get(studentId) === mentorId) {
+    state.mentorAssignments.delete(studentId);
+    toast('Peer mentor assignment removed.', 'info');
+  } else if (mentorLoad(mentorId) >= 2) {
+    toast('That mentor already supports 2 students. Choose another peer.', 'error');
+    return;
+  } else {
+    state.mentorAssignments.set(studentId, mentorId);
+    toast('Marked as assigned for this session.', 'success');
+  }
+  refreshMentorBlock(studentId);
+}
+
+function refreshMentorBlock(studentId) {
+  const student = DataService.getStudent(studentId);
+  const analysis = state.analysis.get(studentId);
+  const block = els.drawer.querySelector('#mentorBlock');
+  if (!student || !analysis || !block) return;
+  block.outerHTML = mentorBlock(student, analysis);
+}
+
 function renderDrawer(student, analysis) {
   els.drawerTitle.textContent = student.name;
   els.drawerMeta.textContent = student.roll + ' · Section ' + student.section + ' · ' + CONFIG.classLabel;
-  els.drawerNav.innerHTML = [
-    ['sec-signals', 'Signals'], ['sec-risk', 'Risk'], ['sec-factors', 'Factors'], ['sec-plan', 'Actions'], ['sec-sim', 'Simulate'], ['sec-ai', 'AI plan']
-  ].map(function (item, index) {
+  const navItems = [
+    ['sec-signals', 'Signals'], ['sec-risk', 'Risk'], ['sec-factors', 'Factors'], ['sec-plan', 'Actions'], ['sec-sim', 'Simulate']
+  ];
+  if (analysis.level !== 'low') navItems.push(['sec-recovery', 'Recovery']);
+  navItems.push(['sec-ai', 'AI plan']);
+  els.drawerNav.innerHTML = navItems.map(function (item, index) {
     return '<button class="nav-pill' + (index === 0 ? ' is-active' : '') + '" type="button" data-target="' + item[0] + '">' + item[1] + '</button>';
   }).join('');
   els.drawerBody.innerHTML = signalsPanel(student, analysis) + riskPanel(student, analysis) +
-    factorsPanel(analysis) + planPanel(student, analysis) + simulatorPanel(student, analysis) + aiPanel(student, analysis);
+    factorsPanel(analysis) + planPanel(student, analysis) + simulatorPanel(student, analysis) +
+    recoveryPanel(student, analysis) + aiPanel(student, analysis);
   updateSimulator();
 }
 
@@ -4637,6 +5099,8 @@ function handleImportFile(file) {
       state.checks.clear();
       state.notes.clear();
       state.aiPlans.clear();
+      state.recoveryPicks.clear();
+      state.mentorAssignments.clear();
       state.section = 'ALL';
       state.search = '';
       state.riskFilter = 'all';
@@ -4820,6 +5284,22 @@ function bindEvents() {
   els.printBtn.addEventListener('click', printStudentReport);
 
   els.drawer.addEventListener('click', function (event) {
+    const recoveryPick = event.target.closest('[data-recovery-pick]');
+    if (recoveryPick && state.selectedId) {
+      state.recoveryPicks.set(state.selectedId, recoveryPick.dataset.recoveryPick);
+      refreshRecovery();
+      return;
+    }
+    const recoveryApply = event.target.closest('[data-recovery-apply]');
+    if (recoveryApply && state.selectedId) {
+      applyRecoveryPath(state.selectedId, recoveryApply.dataset.recoveryApply);
+      return;
+    }
+    const mentorToggle = event.target.closest('[data-mentor-toggle]');
+    if (mentorToggle && state.selectedId) {
+      toggleMentor(state.selectedId, mentorToggle.dataset.mentorToggle);
+      return;
+    }
     if (event.target.closest('[data-ai-generate]')) {
       generateAiPlan(state.selectedId);
       return;
@@ -4901,6 +5381,8 @@ function bindEvents() {
     state.checks.clear();
     state.notes.clear();
     state.aiPlans.clear();
+    state.recoveryPicks.clear();
+    state.mentorAssignments.clear();
     state.section = 'ALL';
     state.search = '';
     state.riskFilter = 'all';
