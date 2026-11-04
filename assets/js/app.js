@@ -633,6 +633,10 @@ function setupTopbar() {
     const syncScrolled = () => topbar.classList.toggle('is-scrolled', window.scrollY > 8);
     syncScrolled();
     window.addEventListener('scroll', syncScrolled, { passive: true });
+    const syncHeight = () => document.documentElement.style.setProperty('--topbar-h', `${topbar.getBoundingClientRect().height}px`);
+    syncHeight();
+    window.addEventListener('resize', syncHeight);
+    if (typeof ResizeObserver === 'function') new ResizeObserver(syncHeight).observe(topbar);
   }
   const wide = window.matchMedia('(min-width: 1181px)');
   if (typeof wide.addEventListener === 'function') wide.addEventListener('change', (event) => { if (event.matches) closeTopbarMenu(); });
