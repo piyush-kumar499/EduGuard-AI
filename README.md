@@ -1,122 +1,73 @@
-# Student Performance Early-Warning Dashboard
+# EduGuard
 
-A single-page, offline-friendly early-warning dashboard for teachers. The existing layout, styling, rule score and CSV workflow are unchanged. This update adds five features:
+EduGuard is a small, dependency-free teacher dashboard for spotting students who may need support and planning the next conversation. It is deliberately a decision-support prototype: the indicators do not label students or replace professional judgment.
 
-1. **Today's priority list** — the five students to help first, using current need, next-test forecast and pending urgent actions.
-2. **Risk forecast** — a small in-browser logistic regression trained on synthetic past students, shown separately from the rule score (`rule score = now`, `forecast = next test`).
-3. **AI support plan** — a 3–4 step teacher plan plus an English/Hindi parent message.
-4. **AI weekly summary** — five class-level action lines based on counts and common reasons.
-5. **Class heatmap** — a colour-and-number grid of attendance, assignments, subjects and trend.
+## What is included
 
-The dashboard always works without an AI key: every AI feature has a local template fallback with an **Offline mode** tag.
+- **Dashboard** — summary cards, support distribution, section comparison, common reasons, search, filters, sorting and CSV export.
+- **Today's focus** — a collapsed-by-default list of the five students who deserve the first check-in.
+- **Class heatmap** — a separate responsive page at `/heatmap.html` with attendance, assignments, subject marks and recent trend.
+- **Student record** — transparent score breakdown, forecast, supporting factors, action checklist, notes, recovery scenarios and a what-if simulator.
+- **AI support draft** — optional teacher plan and parent message. Only performance numbers are sent to `/api/ai`; names and roll numbers stay in the browser.
+- **Live AI call** — use **Talk to EduGuard** for a call-style browser voice conversation. It rings, introduces itself, listens hands-free, speaks replies, and supports conservative barge-in: only meaningful, confident speech can interrupt a reply, while microphone noise suppression and signal checks filter background noise. A text input remains available when browser speech recognition is unavailable.
+- **Offline fallback** — the dashboard remains useful without an API key or network access.
+- **CSV import/export** — import a class using the sample format shown below and export the current at-risk list.
 
----
+## Run locally
 
-## Files
-
-- `index.html` — the dashboard. All new front-end features live here.
-- `api/ai.js` — serverless endpoint for the AI support plan and weekly summary (works on Vercel and in the local server).
-- `server.js` — zero-dependency local server; serves the dashboard and `/api/ai` without deploying.
-- `.env.local` — your local keys (ignored by git; empty until you paste one in).
-- `README.md` — this file.
-
----
-
-## How the AI endpoint stays safe
-
-The browser **never** contains an API key. It sends only anonymous data to `/api/ai`:
-
-- Student plan: roll number, section, attendance, four-week attendance trend, assignments, average marks, T1–T3, latest test, rule score, forecast, and whether an urgent action is pending. **No names are sent.**
-- Weekly summary: class-level counts and the most common reason labels. **No names are sent.**
-
-`api/ai.js` reads the key from `process.env.AI_API_KEY` (or `GROQ_API_KEY` / `XAI_API_KEY`) and the model from `process.env.AI_MODEL` on the server.
-
-By default it calls the **Anthropic Messages API**. Set `AI_PROVIDER=groq` to call **Groq** (`https://api.groq.com/openai/v1/chat/completions`); the default Groq model is `openai/gpt-oss-120b`, which replaced `llama-3.3-70b-versatile` when Groq retired it on 16 Aug 2026. Retired model IDs are detected and retried with the replacement automatically. It also supports **xAI / Grok** when `AI_PROVIDER=grok` or when `AI_MODEL` starts with `grok`.
-
-Every AI result is labelled **“AI suggestion, teacher decides.”**
-
----
-
-## Set `AI_API_KEY` and `AI_MODEL` on Vercel
-
-1. Push this project to a Git repository and import it into Vercel, or run `vercel` from the project root.
-2. In the Vercel dashboard, open the project → **Settings** → **Environment Variables**.
-3. Add:
-   - **Name:** `AI_API_KEY`
-   - **Value:** your Anthropic API key (or xAI/Grok key if you use Grok)
-   - **Environments:** Production, Preview, Development
-4. Add:
-   - **Name:** `AI_MODEL`
-   - **Value:** `claude-sonnet-5-5` (the default), or the exact model ID you want to use.
-5. Optional, only for Grok / xAI:
-   - **Name:** `AI_PROVIDER`
-   - **Value:** `grok`
-   - Set `AI_MODEL` to the Grok model ID available to your xAI account (for example, a `grok-*` model).
-6. Click **Save**, then **Redeploy** the project so the new environment variables are available to the function.
-
-You can also use the Vercel CLI:
+Use Node.js 18 or later:
 
 ```bash
-vercel env add AI_API_KEY
-vercel env add AI_MODEL
-# optional for xAI / Grok
-vercel env add AI_PROVIDER
-vercel --prod
+node server.js
 ```
 
-Do not put the key in `index.html`, a `.env` file committed to Git, or any client-side JavaScript.
+Open <http://localhost:3000>. Open `index.html` directly for the local, non-AI preview; the AI request needs the local server or a deployment that includes `/api/ai`.
 
----
+## Optional AI configuration
 
-## Local testing
+The browser never contains an API key. The endpoint reads these environment variables:
 
-Because `/api/ai` is a serverless function, open the dashboard through a local server or deploy it to Vercel to exercise the live AI path.
-
-### Run locally with Groq (no deployment)
-
-1. Get a key from <https://console.groq.com/keys>.
-2. Open `.env.local` in this folder and paste it after `AI_API_KEY=`. Leave `AI_PROVIDER=groq` and `AI_MODEL=openai/gpt-oss-120b` as they are.
-3. Start the local server:
-
-   ```bash
-   node server.js
-   ```
-
-4. Open <http://localhost:3000>. The console prints whether the key was loaded.
-
-The server reads `.env` and `.env.local` on startup, so restart it after editing the key. You can also use `vercel dev` instead if the Vercel CLI is installed; both serve the same `api/ai.js`.
-
-If you open `index.html` directly as a file, or serve it without the `api` folder, the dashboard detects that the AI endpoint is unavailable and uses the offline template automatically.
-
----
-
-## Response contract
-
-`POST /api/ai` accepts either:
-
-```json
-{ "type": "student", "student": { "...anonymous numbers only..." } }
+```text
+AI_API_KEY=your-key
+AI_PROVIDER=groq
+AI_MODEL=openai/gpt-oss-120b
 ```
 
-or:
+`.env` and `.env.local` are ignored by Git. Restart `node server.js` after changing either file. If no key is configured, the interface uses its local template plan.
 
-```json
-{ "type": "weekly", "class": { "...class-level counts and reasons..." } }
+For the live voice feature, keep `AI_PROVIDER=groq`. The browser does not receive the Groq key. Voice requests use the existing `POST /api/ai` endpoint with `type: "voice"` and a short, sanitised conversation history.
+
+## CSV format
+
+Required columns are `name`, `roll`, `section`, `attendance` and `assignments`. Add a single `marks` column, three test columns (`t1`, `t2`, `t3`), or subject columns such as `maths`, `physics`, `chemistry`, `english` and `computer_science`. Optional `attendance_w1` through `attendance_w4` columns provide a real four-week attendance trend.
+
+Values must be between 0 and 100. The browser validates the file before replacing the current view, and supports up to 300 rows.
+
+## Scoring model
+
+The current score is intentionally explainable:
+
+```text
+35% attendance + 25% assignments + 40% weighted marks
 ```
 
-It returns:
+Tests are weighted T1 20%, T2 30% and T3 50%. A five-point adjustment is applied when marks fall at every test, and another five-point adjustment is applied when attendance falls by at least ten points over four weeks. Scores below 50 are in **Needs support**, 50–69 are **Watch closely**, and 70 or above are **On track**.
 
-```json
-{ "ok": true, "result": { "...strict JSON from the model..." } }
+The next-test forecast is a directional estimate calibrated with demo patterns. It is shown separately from the current score and should never be presented as a certainty.
+
+## Project structure
+
+```text
+index.html                 Dashboard page
+heatmap.html               Dedicated heatmap page
+assets/css/app.css         Shared responsive styles
+assets/js/data.js          Demo data and CSV parsing
+assets/js/scoring.js       Score, factors, forecast and recovery logic
+assets/js/app.js           Shared state, drawer, actions and AI UI
+assets/js/dashboard.js     Dashboard rendering and interactions
+assets/js/heatmap.js       Heatmap rendering and interactions
+api/ai.js                  Serverless AI endpoint
+server.js                  Zero-dependency local server
 ```
 
-On a missing key, provider error, invalid model output or timeout, it returns a non-2xx response. The front end then shows the offline template with the **Offline mode** tag.
-
----
-
-## Notes
-
-- The rule score and forecast are deliberately separate. The forecast does not change the rule score, the risk badges, the CSV import or the printed report.
-- Forecast accuracy is shown in the **How it works** modal as holdout accuracy, labelled **trained on synthetic data**.
-- The heatmap and priority list respect the section filter. The heatmap scrolls horizontally on small screens and every cell contains its number, so colour is not the only signal.
-- The original footer note remains: indicators support educators; they do not label students.
+For real student data, add authentication, access control, a database, retention rules and a reviewed model trained on appropriately governed historical outcomes before using this beyond a prototype.

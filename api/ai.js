@@ -84,7 +84,32 @@ function sanitiseWeekly(raw) {
   };
 }
 
+function sanitiseVoice(raw) {
+  const messages = Array.isArray(raw) ? raw.slice(-12) : [];
+  return messages.map(function (item) {
+    return {
+      role: item && item.role === 'assistant' ? 'assistant' : 'user',
+      content: cleanText(item && item.content, 600)
+    };
+  }).filter(function (item) { return item.content; });
+}
+
 function buildPrompt(body) {
+  if (body.type === 'voice') {
+    const messages = sanitiseVoice(body.messages);
+    return [
+      'You are EduGuard, a calm voice assistant for a school teacher.',
+      'Answer like a warm, attentive phone conversation: acknowledge what the teacher said, use natural short sentences, and ask one useful follow-up when needed.',
+      'Keep each reply brief enough to speak aloud, usually 1 to 3 sentences. Avoid headings, bullet lists, markdown, and robotic disclaimers.',
+      'Give practical suggestions about student support, attendance, assignments, assessment and classroom planning.',
+      'Do not diagnose a student, make a high-stakes decision, invent data, or claim certainty.',
+      'If the teacher asks about a specific student, ask them not to share names or identifying details and use only the information they provide.',
+      'Return strict JSON only with exactly this shape: {"reply":"your spoken response"}.',
+      '',
+      'Conversation:',
+      JSON.stringify(messages)
+    ].join('\n');
+  }
   if (body.type === 'student') {
     const student = sanitiseStudent(body.student);
     return [
@@ -138,6 +163,11 @@ function extractJson(text) {
 
 function validateResult(type, result) {
   if (!result || typeof result !== 'object') throw new Error('AI response was empty');
+
+  if (type === 'voice') {
+    if (typeof result.reply !== 'string' || !result.reply.trim()) throw new Error('AI voice reply missing');
+    return { reply: cleanText(result.reply, 900) };
+  }
 
   if (type === 'student') {
     if (typeof result.summary !== 'string' || !result.summary.trim()) throw new Error('AI summary missing');
@@ -358,8 +388,8 @@ module.exports = async function handler(request, response) {
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch (error) { body = null; }
   }
-  if (!body || (body.type !== 'student' && body.type !== 'weekly')) {
-    response.status(400).json({ ok: false, error: 'Expected type "student" or "weekly"' });
+  if (!body || (body.type !== 'student' && body.type !== 'weekly' && body.type !== 'voice')) {
+    response.status(400).json({ ok: false, error: 'Expected type "student", "weekly" or "voice"' });
     return;
   }
 
