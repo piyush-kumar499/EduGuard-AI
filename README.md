@@ -85,7 +85,7 @@ One register per subject, section and date. A saved register is the source for a
 ```text
 eduguard3/
 ├── api/
-│   └── [...path].js          # single Vercel catch-all -> lib/router.js
+│   └── router.js             # single Vercel function -> lib/router.js
 ├── db/
 │   ├── demo.js               # deterministic demo seed + reset/remove helpers
 │   ├── migrate.js            # applies schema statements and default settings
@@ -286,7 +286,7 @@ HODs can change weights, thresholds, absent-as-zero behaviour and the trend mini
 1. Create a Turso database and token.
 2. Push the repository to GitHub and import it into Vercel.
 3. Add the environment variables from `.env.local` in **Vercel → Project → Settings → Environment Variables**.
-4. Deploy. `vercel.json` routes `/` to `/login.html`, keeps clean URLs, gives the API function a 30-second limit and 1 GB of memory, applies security headers, and caches static assets for one hour.
+4. Deploy. `vercel.json` rewrites `/` to `/login`, rewrites every `/api/*` request to the single `api/router.js` function (a bracketed catch-all file only matches one path segment on Vercel), keeps clean URLs, gives the function a 30-second limit and 1 GB of memory, applies security headers, and caches static assets for one hour.
 5. Run the migration and seed against the production database once:
 
 ```bash

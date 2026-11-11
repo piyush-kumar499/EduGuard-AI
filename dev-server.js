@@ -12,7 +12,7 @@ const path = require('path');
 const { loadEnv, ROOT } = require('./lib/env');
 loadEnv();
 
-const apiHandler = require('./api/[...path].js');
+const apiHandler = require('./api/router.js');
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC = path.join(ROOT, 'public');
@@ -113,8 +113,15 @@ const server = http.createServer((req, res) => {
   const pathname = url.pathname;
 
   if (pathname === '/api' || pathname.startsWith('/api/')) {
-    const parts = pathname.replace(/^\/api\/?/, '').split('/').filter(Boolean);
-    req.query = { path: parts };
+    // Mirror Vercel: every query parameter is exposed on req.query, including
+    // the `path` value written by the /api/:path* rewrite in vercel.json.
+    const query = {};
+    for (const [key, value] of url.searchParams.entries()) {
+      if (query[key] === undefined) query[key] = value;
+      else if (Array.isArray(query[key])) query[key].push(value);
+      else query[key] = [query[key], value];
+    }
+    req.query = query;
     apiHandler(req, res);
     return;
   }

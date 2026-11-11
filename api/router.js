@@ -4,6 +4,12 @@
  * Single Vercel serverless entry point. All /api/* traffic is dispatched by
  * the small internal router so the deployment stays well inside the free-tier
  * function limit.
+ *
+ * The file is deliberately not named api/[...path].js: in a framework-less
+ * Vercel project a bracketed catch-all only matches one path segment, so
+ * /api/auth/login never reached the function and returned the platform 404.
+ * vercel.json rewrites /api/:path* to /api/router?path=:path* instead, which
+ * reaches this function at any depth.
  */
 
 const { loadEnv } = require('../lib/env');
@@ -56,12 +62,23 @@ function readBody(req) {
   });
 }
 
-function parsePath(req) {
-  const raw = req.query?.path;
-  if (Array.isArray(raw)) return raw.join('/');
-  if (typeof raw === 'string' && raw) return raw;
+function internalEntry(req) {
   const url = new URL(req.url || '/', 'http://localhost');
-  return url.pathname.replace(/^\/api\/?/, '');
+  const pathname = url.pathname.replace(/\/+$/, '');
+  return pathname === '/api/router' || pathname === '/api/router.js';
+}
+
+function parsePath(req) {
+  // On Vercel the request arrives as /api/router?path=<rest> (see vercel.json).
+  // Only trust that forwarded value on the internal entry path, so a client
+  // cannot pick a different route with a stray ?path= parameter.
+  if (internalEntry(req)) {
+    const raw = req.query?.path;
+    if (Array.isArray(raw)) return raw.join('/').replace(/^\/+|\/+$/g, '');
+    if (typeof raw === 'string') return raw.replace(/^\/+|\/+$/g, '');
+  }
+  const url = new URL(req.url || '/', 'http://localhost');
+  return url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, '');
 }
 
 function queryObject(req) {
