@@ -311,16 +311,36 @@
   function lockAssessment() {
     var item = current();
     if (!item) return;
-    ui.confirm({
-      title: 'Finalise this assessment?',
-      message: 'Faculty will no longer be able to edit these marks. The HOD can still unlock it with a reason.',
-      confirmLabel: 'Finalise'
-    }).then(function (ok) {
-      if (!ok) return;
-      EG.api.post('/api/assessments/' + encodeURIComponent(item.id) + '/lock').then(function () {
-        ui.toast('Assessment finalised.', 'success');
-        return load();
-      }).catch(function (error) { ui.toast(error.message, 'error'); });
+    var ready = state.grid ? state.grid.flush(true) : Promise.resolve(true);
+    ready.then(function (saved) {
+      if (saved === false) return;
+      var total = state.data ? state.data.students.length : 0;
+      var entered = statFor(item.id, 'entered') || 0;
+      var missing = Math.max(0, total - entered);
+      var check = el('div', { class: 'finalise-check' + (missing ? ' is-warn' : ' is-ready') },
+        el('span', { class: 'finalise-check__icon', html: icon(missing ? 'warning' : 'check', 17) }),
+        el('div', null,
+          el('strong', { text: entered + ' of ' + total + ' students entered' }),
+          el('span', {
+            text: missing
+              ? missing + ' ' + ui.plural(missing, 'student') + ' still ' + (missing === 1 ? 'has' : 'have') + ' no mark. You can still finalise, but those gaps will be locked too.'
+              : 'Every active student has a mark or status. This assessment is ready to finalise.'
+          })
+        )
+      );
+      ui.confirm({
+        title: 'Finalise this assessment?',
+        message: 'Faculty will no longer be able to edit these marks. The HOD can still unlock it with a reason.',
+        body: check,
+        confirmLabel: 'Finalise',
+        danger: true
+      }).then(function (ok) {
+        if (!ok) return;
+        EG.api.post('/api/assessments/' + encodeURIComponent(item.id) + '/lock').then(function () {
+          ui.toast('Assessment finalised.', 'success');
+          return load();
+        }).catch(function (error) { ui.toast(error.message, 'error'); });
+      });
     });
   }
 
@@ -381,27 +401,13 @@
   }
 
   function exportMarks() {
-    var data = state.data;
-    if (!data) return;
-    var columns = [
-      { key: 'roll', label: 'Roll' },
-      { key: 'name', label: 'Student' }
-    ];
-    data.assessments.forEach(function (assessment) {
-      columns.push({ key: 'a-' + assessment.id, label: assessment.title + ' /' + assessment.maxMarks });
+    if (!state.data) return;
+    var query = EG.api.query({ subjectId: state.subjectId, sectionId: state.sectionId });
+    return EG.api.download('/api/export/marks.csv' + query).then(function () {
+      ui.toast('Gradebook exported.', 'success');
+    }).catch(function (error) {
+      ui.toast(error.message || 'The gradebook could not be exported.', 'error');
     });
-    columns.push({ key: 'score', label: 'Subject %' });
-    var rows = data.students.map(function (student) {
-      var row = { roll: student.roll, name: student.name, score: data.rowScores[student.id] ? data.rowScores[student.id].value : null };
-      data.assessments.forEach(function (assessment) {
-        var mark = (data.marks[assessment.id] || {})[student.id];
-        row['a-' + assessment.id] = !mark ? '' : mark.status === 'absent' ? 'A' : mark.status === 'exempt' ? 'E' : mark.score;
-      });
-      return row;
-    });
-    var name = [data.assessment.subjectName, data.assessment.sectionName, data.assessment.title].join('-').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    pages.download('eduguard-' + name + '-' + new Date().toISOString().slice(0, 10) + '.csv', rows, columns);
-    ui.toast('Marks exported.', 'success');
   }
 
   function importMarks() {

@@ -96,8 +96,205 @@
             factor.impact ? el('span', { class: 'factor__impact', text: '−' + ui.num(factor.impact) + ' pts' }) : null
           );
         }))
-        : pages.empty('No factors to show', 'Once attendance or assessment data is recorded, the contributing factors appear here.', null, 'activity')
+        : pages.empty('No factors to show', 'Once attendance or assessment data is recorded, the contributing factors appear here.', null, 'activity'),
+      foot: analysis.hasData
+        ? el('div', { class: 'forecast-box' },
+          el('span', { text: 'Next-term support forecast' }),
+          el('strong', { text: ui.pct(analysis.forecast.percent) }),
+          el('p', { text: (analysis.forecast.factors && analysis.forecast.factors[0] && analysis.forecast.factors[0].text) || 'No single factor is driving the forecast.' })
+        )
+        : null
     });
+  }
+
+  /* What-if simulator: client-side only, using the same weights as the indicator. */
+  function simulatorCard(analysis) {
+    if (!analysis.hasData) return null;
+    var start = {
+      attendance: Math.round(Number(analysis.signals.attendance) || 0),
+      coursework: Math.round(Number(analysis.signals.coursework) || 0),
+      marks: Math.round(Number(analysis.signals.marks) || 0)
+    };
+    var penalty = (analysis.penalties || []).reduce(function (sum, item) { return sum + Number(item.points || 0); }, 0);
+    var weights = analysis.settings.weights;
+    var thresholds = analysis.thresholds;
+    var rows = [
+      { key: 'attendance', label: 'Attendance' },
+      { key: 'coursework', label: 'Coursework' },
+      { key: 'marks', label: 'Weighted marks' }
+    ];
+    var values = {};
+    var labels = {};
+    var sliders = rows.map(function (row) {
+      values[row.key] = start[row.key];
+      labels[row.key] = el('b', { text: start[row.key] + '%' });
+      var input = el('input', {
+        type: 'range', min: '0', max: '100', step: '1', value: String(start[row.key]),
+        'aria-label': row.label + ' what-if value'
+      });
+      input.addEventListener('input', function () {
+        values[row.key] = Number(input.value);
+        labels[row.key].textContent = input.value + '%';
+        update();
+      });
+      return el('label', { class: 'sim-row' },
+        el('span', null, row.label, labels[row.key]),
+        input
+      );
+    });
+
+    var scoreOut = el('strong', { text: ui.num(analysis.score) });
+    var bandOut = el('strong', { text: analysis.levelLabel });
+    var result = el('div', { class: 'sim-result' },
+      el('div', null, el('span', { text: 'Projected score' }), scoreOut),
+      el('div', null, el('span', { text: 'Projected band' }), bandOut),
+      el('p', { text: 'Current penalties of ' + ui.num(Math.abs(penalty)) + ' points stay included. This is a planning aid, not a prediction.' })
+    );
+
+    function update() {
+      var available = [
+        [values.attendance, Number(weights.attendance)],
+        [values.coursework, Number(weights.coursework)],
+        [values.marks, Number(weights.marks)]
+      ].filter(function (pair) { return pair[1] > 0; });
+      var totalWeight = available.reduce(function (sum, pair) { return sum + pair[1]; }, 0) || 1;
+      var base = available.reduce(function (sum, pair) { return sum + pair[0] * pair[1]; }, 0) / totalWeight;
+      var score = Math.max(0, Math.min(100, Math.round((base + penalty) * 10) / 10));
+      var level = score >= thresholds.onTrack ? 'low' : score >= thresholds.watch ? 'medium' : 'high';
+      scoreOut.textContent = ui.num(score);
+      bandOut.textContent = level === 'low' ? 'On track' : level === 'medium' ? 'Watch closely' : 'Needs support';
+      bandOut.className = 'sim-band sim-band--' + level;
+    }
+
+    var card = pages.card({
+      title: 'What-if simulator',
+      subtitle: 'Move the sliders to see how small changes would affect the band. This is a planning aid, not a prediction.',
+      body: el('div', null, el('div', { class: 'sim-grid' }, sliders), result)
+    });
+    update();
+    return card;
+  }
+
+  function offlinePlan(analysis) {
+    var risky = (analysis.factors || []).filter(function (item) { return item.tone !== 'positive'; });
+    var actions = analysis.actions || [];
+    var plan = actions.slice(0, 4).map(function (action) {
+      return { step: action.title, detail: action.detail, priority: action.priority };
+    });
+    if (!plan.length) {
+      plan = [{ step: 'Keep the current supports in place', detail: 'Review the full picture after the next assessment.', priority: 'Monitor' }];
+    }
+    var first = plan[0];
+    return {
+      summary: analysis.student.name.split(' ')[0] + ' is currently in the ' + analysis.levelLabel.toLowerCase() +
+        ' band with a support score of ' + ui.num(analysis.score) + '/100. ' +
+        (risky[0] ? risky[0].text : 'The core signals are steady.') +
+        ' Small, consistent changes over the next two weeks are likely to help most.',
+      plan: plan,
+      parentMessage: {
+        en: 'Thank you for your support at home. ' +
+          (risky[0] ? 'We are focusing on ' + risky[0].title.toLowerCase() + ' this week. ' : '') +
+          'The next step is small and practical: ' + first.detail +
+          ' We would be glad to hear what you have noticed as well.',
+        hi: 'घर पर आपके सहयोग के लिए धन्यवाद। इस सप्ताह हम ' +
+          (risky[0] ? risky[0].title.toLowerCase() : 'नियमित अभ्यास') +
+          ' पर ध्यान दे रहे हैं। अगला कदम छोटा और व्यावहारिक है: ' + first.detail +
+          ' आपने क्या देखा है, यह जानना हमारे लिए उपयोगी होगा।'
+      },
+      offline: true
+    };
+  }
+
+  function renderPlan(host, result) {
+    host.textContent = '';
+    if (!result) return;
+    var message = result.parentMessage || {};
+    var language = message.hi ? 'hi' : 'en';
+    var messageText = el('p', { text: message[language] || '' });
+    var enButton = el('button', {
+      class: 'chip' + (language === 'en' ? ' is-active' : ''), type: 'button',
+      onClick: function () {
+        language = 'en';
+        messageText.textContent = message.en || '';
+        enButton.classList.add('is-active');
+        hiButton.classList.remove('is-active');
+      }
+    }, 'English');
+    var hiButton = el('button', {
+      class: 'chip' + (language === 'hi' ? ' is-active' : ''), type: 'button',
+      onClick: function () {
+        language = 'hi';
+        messageText.textContent = message.hi || message.en || '';
+        hiButton.classList.add('is-active');
+        enButton.classList.remove('is-active');
+      }
+    }, 'Hindi');
+    var again = el('button', { class: 'btn btn--sm btn--ghost', type: 'button' }, el('span', { html: icon('refresh', 13) }), 'Generate again');
+    again.addEventListener('click', function () { generatePlan(again); });
+    host.appendChild(el('div', { class: 'ai-block' },
+      el('div', { class: 'row row--between gap-2' },
+        el('h3', { text: 'Support plan draft' }),
+        result.offline ? el('span', { class: 'pill pill--nodata', text: 'Offline template' }) : el('span', { class: 'pill pill--brand', text: 'AI draft' })
+      ),
+      el('p', { class: 'mt-2', text: result.summary || '' }),
+      el('div', { class: 'mt-3' }, (result.plan || []).map(function (step, index) {
+        return el('div', { class: 'ai-step' },
+          el('span', { class: 'ai-step__num', text: String(index + 1) }),
+          el('div', null,
+            el('div', { class: 'row row--between gap-2' },
+              el('strong', { text: step.step || step.title || '' }),
+              step.priority ? el('span', { class: 'priority priority--' + String(step.priority).toLowerCase(), text: step.priority }) : null
+            ),
+            el('div', { class: 'xs muted', text: step.detail || '' })
+          )
+        );
+      })),
+      el('div', { class: 'hr-text mt-4', text: 'Message for home' }),
+      el('div', { class: 'chips mt-2' }, enButton, message.hi ? hiButton : null),
+      messageText,
+      el('div', { class: 'btn-row mt-3' },
+        el('button', {
+          class: 'btn btn--sm', type: 'button',
+          onClick: function () { pages.copy(messageText.textContent); }
+        }, el('span', { html: icon('copy', 13) }), 'Copy message'),
+        again
+      ),
+      el('p', { class: 'xs faint mt-2', text: 'This is a draft. Review the wording, then use your own judgement before sharing it.' })
+    ));
+  }
+
+  function generatePlan(button) {
+    var host = document.getElementById('student-ai-output');
+    if (!host || !state.data) return;
+    var analysis = state.data.analysis;
+    if (button) button.disabled = true;
+    host.textContent = '';
+    host.appendChild(el('div', { class: 'skeleton', style: { height: '160px' } }));
+    EG.api.post('/api/ai', { type: 'student', studentId: studentId }).then(function (result) {
+      var payload = result && result.result;
+      if (!payload) throw new Error('The assistant returned an empty plan.');
+      renderPlan(host, payload);
+    }).catch(function (error) {
+      if (error && error.status === 401) return;
+      if (error && error.status === 429) ui.toast('You have reached the AI request limit for this minute.', 'info');
+      renderPlan(host, offlinePlan(analysis));
+      ui.toast('The AI draft was unavailable, so a local template was used.', 'info');
+    }).then(function () {
+      if (button) button.disabled = false;
+    });
+  }
+
+  function aiCard() {
+    var host = el('div', { id: 'student-ai-output' },
+      el('p', { class: 'muted', text: 'Generate a short plan and a parent message in English and Hindi. Names and roll numbers never leave the app.' }),
+      el('button', { class: 'btn btn--primary mt-2', type: 'button', 'data-ai-inline': 'true' }, el('span', { html: icon('sparkles', 15) }), 'Generate draft')
+    );
+    var card = pages.card({
+      title: 'AI support draft',
+      subtitle: 'Anonymous numbers only. Review before sharing.',
+      body: host
+    });
+    return card;
   }
 
   function actionStatus(analysis) {
@@ -462,7 +659,8 @@
       el('a', { class: 'btn', href: '/students' }, el('span', { html: icon('arrowLeft') }), 'All students'),
       el('button', { class: 'btn', type: 'button', onClick: function () { window.print(); } }, el('span', { html: icon('printer') }), 'Print'),
       el('a', { class: 'btn', href: '/reports?student=' + encodeURIComponent(studentId) }, el('span', { html: icon('reports') }), 'Report'),
-      el('a', { class: 'btn btn--soft', href: '/assistant?student=' + encodeURIComponent(studentId) }, el('span', { html: icon('sparkles') }), 'Ask assistant'),
+      el('button', { class: 'btn btn--primary', type: 'button', id: 'student-ai-action', onClick: function (event) { generatePlan(event.currentTarget); } }, el('span', { html: icon('sparkles') }), 'AI draft'),
+      el('a', { class: 'btn btn--soft', href: '/assistant?student=' + encodeURIComponent(studentId) }, el('span', { html: icon('assistant') }), 'Ask assistant'),
       isHod ? el('button', { class: 'btn btn--soft', type: 'button', onClick: editStudent }, el('span', { html: icon('edit') }), 'Edit') : null
     );
 
@@ -475,6 +673,7 @@
         metric('Forecast', analysis.hasData ? ui.pct(analysis.forecast.percent) : '—', 'Lower is steadier', 'activity')
       ),
       factors(analysis),
+      simulatorCard(analysis),
       timelineCard(analysis),
       subjectsCard(analysis),
       attendanceCard(analysis)
@@ -482,6 +681,7 @@
 
     var right = el('div', { class: 'stack' },
       actionsCard(analysis),
+      aiCard(),
       scoreBreakdown(analysis),
       recovery(analysis),
       mentorsCard(analysis),
@@ -504,6 +704,9 @@
       actions: headerActions,
       content: el('div', { class: 'student-grid' }, left, right)
     });
+
+    var inline = document.querySelector('[data-ai-inline]');
+    if (inline) inline.addEventListener('click', function () { generatePlan(inline); });
   }
 
   function reload() {

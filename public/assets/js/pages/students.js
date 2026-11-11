@@ -8,12 +8,13 @@
   var pages = EG.pages;
   var icon = ui.icon;
 
-  var state = { q: '', sectionId: '', band: '', sort: 'priority', direction: 'asc', offset: 0, limit: 25, data: null };
+  var state = { q: '', sectionId: '', subjectId: '', band: '', sort: 'priority', direction: 'asc', offset: 0, limit: 25, data: null };
 
   function readQuery() {
     var params = new URLSearchParams(window.location.search);
     state.q = params.get('q') || '';
     state.sectionId = params.get('sectionId') || '';
+    state.subjectId = params.get('subjectId') || '';
     state.band = params.get('band') || '';
     state.sort = params.get('sort') || 'priority';
     state.direction = params.get('direction') || 'asc';
@@ -24,6 +25,7 @@
     var params = new URLSearchParams();
     if (state.q) params.set('q', state.q);
     if (state.sectionId) params.set('sectionId', state.sectionId);
+    if (state.subjectId) params.set('subjectId', state.subjectId);
     if (state.band) params.set('band', state.band);
     if (state.sort && state.sort !== 'priority') params.set('sort', state.sort);
     if (state.direction === 'desc') params.set('direction', 'desc');
@@ -37,6 +39,7 @@
     return EG.api.get('/api/students', {
       q: state.q || undefined,
       sectionId: state.sectionId || undefined,
+      subjectId: state.subjectId || undefined,
       band: state.band || undefined,
       sort: state.sort,
       direction: state.direction,
@@ -62,6 +65,9 @@
 
     var section = pages.select([{ value: '', label: 'All sections' }].concat((data.sections || []).map(function (item) { return { value: item.id, label: item.name }; })), { value: state.sectionId });
     section.addEventListener('change', function () { state.sectionId = section.value; state.offset = 0; fetchRows(); });
+
+    var subject = pages.select([{ value: '', label: 'All subjects' }].concat((data.subjects || []).map(function (item) { return { value: item.id, label: item.name }; })), { value: state.subjectId });
+    subject.addEventListener('change', function () { state.subjectId = subject.value; state.offset = 0; fetchRows(); });
 
     var sort = pages.select([
       { value: 'priority', label: 'Priority order' },
@@ -95,9 +101,10 @@
       el('div', { class: 'student-toolbar toolbar' },
         el('div', { class: 'field grow' }, el('label', { text: 'Search' }), search),
         el('div', { class: 'field' }, el('label', { text: 'Section' }), section),
+        el('div', { class: 'field' }, el('label', { text: 'Subject' }), subject),
         el('div', { class: 'field' }, el('label', { text: 'Sort by' }), sort),
         el('div', { class: 'field' }, el('label', { text: 'Direction' }), direction),
-        el('button', { class: 'btn btn--sm', type: 'button', onClick: function () { state.q = ''; state.sectionId = ''; state.band = ''; state.sort = 'priority'; state.direction = 'asc'; state.offset = 0; fetchRows(); } }, 'Reset')
+        el('button', { class: 'btn btn--sm', type: 'button', onClick: function () { state.q = ''; state.sectionId = ''; state.subjectId = ''; state.band = ''; state.sort = 'priority'; state.direction = 'asc'; state.offset = 0; fetchRows(); } }, 'Reset')
       ),
       el('div', { class: 'row row--between gap-3' }, chips,
         el('span', { class: 'xs faint', text: data.total + ' ' + ui.plural(data.total, 'student') + ' in view' })

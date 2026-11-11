@@ -145,7 +145,7 @@
       if (!session) return null;
       EG.pages.session = session;
       EG.pages.scope = session.scope;
-      return loader(session).catch(function (error) {
+      return Promise.resolve(loader(session)).catch(function (error) {
         if (error && error.status === 401) return null;
         var content = document.getElementById('page-content');
         if (content) {
@@ -235,7 +235,9 @@
       });
       form.appendChild(grid);
       var errorBox = el('div', { class: 'error-box', hidden: true });
+      if (options.extra) form.appendChild(options.extra);
       form.appendChild(errorBox);
+      if (options.afterRender) options.afterRender(inputs, form);
 
       var submit = el('button', { class: 'btn btn--primary', type: 'submit', form: 'modal-form', text: options.submitLabel || 'Save' });
       var cancel = el('button', { class: 'btn', type: 'button', onClick: function () { modal.close(); }, text: 'Cancel' });

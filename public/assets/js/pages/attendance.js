@@ -13,7 +13,7 @@
     records: {}, dirty: {}, search: '', saving: false,
     picker: null, dateInput: null, dateStrip: null, kpiHost: null,
     rosterHost: null, statusHost: null, saveButton: null, bulkHost: null,
-    cardNodes: {}
+    resetButton: null, copyButton: null, cardNodes: {}
   };
 
   function updateQuery() {
@@ -102,7 +102,70 @@
       state.saveButton.disabled = state.saving || !state.data || !state.data.canEdit || !Object.keys(state.dirty).length;
       state.saveButton.innerHTML = (state.saving ? '<span class="spinner" aria-hidden="true"></span> Saving...' : icon('check', 14) + ' Save register');
     }
+    if (state.resetButton) {
+      state.resetButton.disabled = state.saving || !state.data || !state.data.canEdit || !Object.keys(state.dirty).length;
+    }
+    if (state.copyButton) {
+      state.copyButton.hidden = !(state.data && state.data.canEdit && !state.data.session && state.data.previous);
+      if (state.data && state.data.previous) {
+        state.copyButton.title = 'Copy the register from ' + ui.date(state.data.previous.date, 'long');
+      }
+    }
     if (state.bulkHost) state.bulkHost.hidden = !(state.data && state.data.canEdit);
+  }
+
+  function applyStudent(student, present) {
+    setRecord(student.id, present);
+    var node = state.cardNodes[student.id];
+    if (node) {
+      node.toggle.checked = present;
+      node.person.classList.toggle('is-absent', !present);
+      node.status.textContent = present ? 'Present' : 'Absent';
+      node.toggle.setAttribute('aria-label', 'Mark ' + student.name + (present ? ' absent' : ' present'));
+    }
+  }
+
+  function focusCard(index) {
+    if (!state.rosterHost) return;
+    var cards = state.rosterHost.querySelectorAll('.attendance-person');
+    var target = cards[index];
+    if (target) target.focus();
+  }
+
+  function copyPrevious() {
+    var data = state.data;
+    if (!data || !data.canEdit || !data.previous) return;
+    function apply() {
+      var changed = 0;
+      data.students.forEach(function (student) {
+        if (!Object.prototype.hasOwnProperty.call(data.previous.records, student.id)) return;
+        var present = Boolean(data.previous.records[student.id]);
+        if (state.records[student.id] === present) return;
+        applyStudent(student, present);
+        changed += 1;
+      });
+      if (changed) {
+        ui.toast('Copied the register from ' + ui.date(data.previous.date, 'long') + ' into this date.', 'success');
+      } else {
+        ui.toast('The last register already matches these selections.', 'info');
+      }
+    }
+    if (!Object.keys(state.dirty).length) { apply(); return; }
+    ui.confirm({
+      title: 'Replace current selections?',
+      message: 'The register from ' + ui.date(data.previous.date, 'long') + ' will be copied over the choices on this page. Nothing is saved until you press Save register.',
+      confirmLabel: 'Copy previous register'
+    }).then(function (ok) { if (ok) apply(); });
+  }
+
+  function resetChanges() {
+    if (!Object.keys(state.dirty).length) return;
+    ui.confirm({
+      title: 'Reset these changes?',
+      message: 'The register will reload from the last saved state for this date.',
+      confirmLabel: 'Reset changes',
+      danger: true
+    }).then(function (ok) { if (ok) load(); });
   }
 
   function setRecord(studentId, present) {
@@ -117,7 +180,7 @@
     renderStatus();
   }
 
-  function studentCard(student) {
+  function studentCard(student, index) {
     var present = state.records[student.id] !== false;
     var toggle = el('input', {
       type: 'checkbox',
@@ -126,7 +189,12 @@
       'aria-label': (present ? 'Mark ' : 'Mark ') + student.name + (present ? ' absent' : ' present')
     });
     var status = el('span', { class: 'attendance-person__sub', text: present ? 'Present' : 'Absent' });
-    var person = el('div', { class: 'attendance-person' + (present ? '' : ' is-absent') },
+    var person = el('div', {
+      class: 'attendance-person' + (present ? '' : ' is-absent'),
+      tabindex: '0',
+      dataset: { index: String(index) },
+      'aria-label': student.name + ' · ' + student.roll + (present ? ' · present' : ' · absent')
+    },
       el('span', { class: 'avatar avatar--sm', text: ui.initials(student.name) }),
       el('div', { class: 'attendance-person__meta' },
         el('div', { class: 'attendance-person__name', text: student.name }),
@@ -140,10 +208,25 @@
       el('span', { class: 'attendance-person__meta', style: { flex: '0 0 auto', textAlign: 'right' } }, status),
       el('label', { class: 'switch' }, toggle, el('span', { class: 'switch__track' }))
     );
-    toggle.addEventListener('change', function () {
-      setRecord(student.id, toggle.checked);
-      toggle.setAttribute('aria-label', (toggle.checked ? 'Mark ' : 'Mark ') + student.name + (toggle.checked ? ' absent' : ' present'));
-      status.textContent = toggle.checked ? 'Present' : 'Absent';
+    toggle.addEventListener('change', function () { applyStudent(student, toggle.checked); });
+    person.addEventListener('keydown', function (event) {
+      if (event.target && event.target.closest && event.target.closest('input, button, label')) return;
+      var key = event.key;
+      if (key === 'p' || key === 'P' || key === ' ') {
+        event.preventDefault();
+        applyStudent(student, true);
+        person.setAttribute('aria-label', student.name + ' · ' + student.roll + ' · present');
+      } else if (key === 'a' || key === 'A' || key === 'Enter') {
+        event.preventDefault();
+        applyStudent(student, false);
+        person.setAttribute('aria-label', student.name + ' · ' + student.roll + ' · absent');
+      } else if (key === 'ArrowDown') {
+        event.preventDefault();
+        focusCard(index + 1);
+      } else if (key === 'ArrowUp') {
+        event.preventDefault();
+        focusCard(index - 1);
+      }
     });
     state.cardNodes[student.id] = { person: person, status: status, toggle: toggle };
     return person;
@@ -166,7 +249,7 @@
       return;
     }
     var grid = el('div', { class: 'attendance-roster' });
-    students.forEach(function (student) { grid.appendChild(studentCard(student)); });
+    students.forEach(function (student, index) { grid.appendChild(studentCard(student, index)); });
     state.rosterHost.appendChild(grid);
   }
 
@@ -267,6 +350,10 @@
     state.rosterHost = el('div');
     state.statusHost = el('span', { class: 'save-state' });
     state.saveButton = el('button', { class: 'btn btn--primary', type: 'button', onClick: save }, el('span', { html: icon('check', 14) }), 'Save register');
+    state.resetButton = el('button', { class: 'btn btn--sm', type: 'button', onClick: resetChanges, disabled: 'disabled' }, 'Reset changes');
+    state.copyButton = el('button', {
+      class: 'btn btn--sm btn--soft', type: 'button', hidden: 'hidden', onClick: copyPrevious
+    }, el('span', { html: icon('copy', 13) }), 'Copy last register');
     state.bulkHost = el('div', { class: 'btn-row' },
       el('button', { class: 'btn btn--sm', type: 'button', onClick: function () { bulk(true); } }, el('span', { html: icon('check', 13) }), 'All present'),
       el('button', { class: 'btn btn--sm', type: 'button', onClick: function () { bulk(false); } }, el('span', { html: icon('x', 13) }), 'All absent')
@@ -285,13 +372,13 @@
           el('div', { class: 'field' }, el('label', { text: 'Register date' }), state.dateInput),
           el('div', { class: 'field grow', style: { minWidth: '180px' } }, el('label', { text: 'Find student' }), search)
         ),
-        state.dateStrip
+        el('div', { class: 'row row--wrap row--between gap-2' }, state.dateStrip, state.copyButton)
       )
     });
 
     var rosterCard = pages.card({
       title: 'Register',
-      subtitle: 'Switch a student off to mark them absent. Only this date is changed.',
+      subtitle: 'Switch a student off to mark them absent. Press P or A, or use the arrow keys.',
       actions: state.bulkHost,
       body: state.rosterHost,
       foot: el('div', { class: 'row row--wrap gap-3 row--between w-100' },
@@ -299,6 +386,7 @@
           el('span', { class: 'xs faint', text: 'Marked records are written to the audit log.' })
         ),
         el('div', { class: 'row gap-2' },
+          state.resetButton,
           el('button', { class: 'btn btn--sm', type: 'button', onClick: function () { window.print(); } }, el('span', { html: icon('printer', 13) }), 'Print'),
           el('button', { class: 'btn btn--sm', type: 'button', onClick: exportCsv }, el('span', { html: icon('download', 13) }), 'CSV'),
           state.saveButton

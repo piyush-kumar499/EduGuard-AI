@@ -8,6 +8,25 @@
   var pages = EG.pages;
   var icon = ui.icon;
 
+  var PAGE_SIZE = 9;
+  var state = { sectionId: '', subjectId: '', page: 0 };
+
+  function readQuery() {
+    var params = new URLSearchParams(window.location.search);
+    state.sectionId = params.get('sectionId') || '';
+    state.subjectId = params.get('subjectId') || '';
+    state.page = Math.max(0, Number(params.get('page')) || 0);
+  }
+
+  function writeQuery() {
+    var params = new URLSearchParams();
+    if (state.sectionId) params.set('sectionId', state.sectionId);
+    if (state.subjectId) params.set('subjectId', state.subjectId);
+    if (state.page) params.set('page', String(state.page));
+    var text = params.toString();
+    window.history.replaceState({}, '', window.location.pathname + (text ? '?' + text : ''));
+  }
+
   function personRow(row, rank) {
     return el('a', { class: 'focus-item', href: pages.studentHref(row.id) },
       el('span', { class: 'focus-item__rank', text: String(rank).padStart(2, '0') }),
@@ -81,7 +100,101 @@
     );
   }
 
-  function render(data, session) {
+  function departmentPulse(data) {
+    if (!data.department) return null;
+    var faculty = data.department.facultyProgress || [];
+    var attention = data.department.attention || [];
+    var body = el('div', { class: 'stack--sm' });
+    if (faculty.length) {
+      body.appendChild(el('div', { class: 'eyebrow', text: 'Faculty entry progress' }));
+      body.appendChild(el('div', { class: 'pulse-list' }, faculty.map(function (row) {
+        var level = row.filledPct >= 90 ? 'low' : row.filledPct >= 50 ? 'medium' : 'high';
+        return el('div', { class: 'pulse-row' },
+          el('div', { class: 'pulse-row__top' },
+            el('span', { class: 'truncate', text: row.owner }),
+            el('span', { class: 'xs muted', text: row.pairs + ' ' + ui.plural(row.pairs, 'class', 'classes') + (row.overdue ? ' · ' + row.overdue + ' overdue' : '') })
+          ),
+          el('div', { class: 'row gap-2' },
+            el('div', { class: 'grow' }, pages.meter(row.filledPct, level)),
+            el('strong', { class: 'xs', text: ui.pct(row.filledPct) })
+          )
+        );
+      })));
+    } else {
+      body.appendChild(el('p', { class: 'small muted', text: 'No faculty assignments have marks activity yet.' }));
+    }
+    if (attention.length) {
+      body.appendChild(el('div', { class: 'eyebrow mt-2', text: 'Sections over 40% flagged' }));
+      attention.forEach(function (row) {
+        body.appendChild(el('div', { class: 'attention-item' },
+          el('div', null,
+            el('div', { class: 'strong', text: row.name }),
+            el('div', { class: 'xs muted', text: row.students + ' students · ' + ui.pct(row.attendance) + ' attendance' })
+          ),
+          el('span', { class: 'pill pill--medium', text: ui.pct(row.flaggedShare) + ' flagged' })
+        ));
+      });
+    }
+    return pages.card({
+      title: 'Department pulse',
+      subtitle: 'Where entry and support effort should land first',
+      body: body,
+      foot: el('a', { class: 'btn btn--sm btn--soft', href: '/progress' }, 'Open data progress', el('span', { html: icon('arrowRight', 13) }))
+    });
+  }
+
+  function studentTable(students) {
+    var rows = students.rows || [];
+    var body = el('tbody');
+    rows.forEach(function (row) {
+      body.appendChild(el('tr', null,
+        el('td', { class: 'mono', text: row.roll }),
+        el('td', null, el('a', { class: 'row-link strong', href: pages.studentHref(row.id), text: row.name }), el('div', { class: 'person__sub', text: row.sectionName })),
+        el('td', { class: 'num', text: ui.pct(row.attendance) }),
+        el('td', { class: 'num', text: ui.pct(row.marks) }),
+        el('td', { class: 'num', text: row.hasData ? ui.num(row.score, 1) : '—' }),
+        el('td', null, el('span', { html: ui.levelPill(row.level, row.levelLabel) }))
+      ));
+    });
+    var total = students.total || 0;
+    var pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    var current = Math.min(state.page, pageCount - 1);
+    var pager = el('div', { class: 'row row--between gap-3 mt-3' },
+      el('span', { class: 'xs faint', text: total + ' ' + ui.plural(total, 'student') + ' in view' }),
+      el('div', { class: 'btn-row' },
+        el('button', {
+          class: 'btn btn--sm', type: 'button', disabled: current === 0 ? 'disabled' : null,
+          onClick: function () { state.page = Math.max(0, current - 1); load(); }
+        }, el('span', { html: icon('arrowLeft', 13) }), 'Prev'),
+        el('span', { class: 'xs muted', text: 'Page ' + (current + 1) + ' of ' + pageCount }),
+        el('button', {
+          class: 'btn btn--sm', type: 'button', disabled: current >= pageCount - 1 ? 'disabled' : null,
+          onClick: function () { state.page = Math.min(pageCount - 1, current + 1); load(); }
+        }, 'Next', el('span', { html: icon('arrowRight', 13) }))
+      )
+    );
+    return pages.card({
+      title: 'Student overview',
+      subtitle: 'The whole cohort, ranked by support priority',
+      body: rows.length
+        ? el('div', null,
+          el('div', { class: 'table-wrap' },
+            el('table', { class: 'table table--compact' },
+              el('thead', null, el('tr', null,
+                el('th', { text: 'Roll' }), el('th', { text: 'Student' }),
+                el('th', { class: 'num', text: 'Attendance' }), el('th', { class: 'num', text: 'Marks' }),
+                el('th', { class: 'num', text: 'Score' }), el('th', { text: 'Band' })
+              )),
+              body
+            )
+          ),
+          pager
+        )
+        : pages.empty('No students in view', 'Adjust the section or subject filters to widen the view.', null, 'students')
+    });
+  }
+
+  function render(data, students, session) {
     var isHod = session.user.role === 'HOD';
     var firstName = session.user.name.split(' ')[0];
     var hour = new Date().getHours();
@@ -195,7 +308,7 @@
     });
     container.appendChild(el('div', { class: 'dash-grid mt-4' },
       el('div', { class: 'stack' }, focus, reasonsCard),
-      el('div', { class: 'stack' }, attention, pages.card({
+      el('div', { class: 'stack' }, attention, departmentPulse(data), pages.card({
         title: 'How the score works',
         subtitle: 'Transparent, reviewable and never a decision on its own',
         body: el('div', { class: 'stack--sm small muted' },
@@ -204,29 +317,45 @@
         )
       }))
     ));
+    container.appendChild(el('div', { class: 'mt-4' }, studentTable(students)));
   }
 
-  function buildActions(data, session) {
-    var sectionSelect = pages.select([{ value: '', label: 'All sections' }].concat(data.scope.sections.map(function (section) { return { value: section.id, label: section.name }; })), { value: new URLSearchParams(window.location.search).get('sectionId') || '' });
+  function buildActions(data) {
+    var sectionSelect = pages.select([{ value: '', label: 'All sections' }].concat(data.scope.sections.map(function (section) { return { value: section.id, label: section.name }; })), { value: state.sectionId });
     sectionSelect.id = 'dash-section';
-    sectionSelect.addEventListener('change', function () {
-      var params = new URLSearchParams(window.location.search);
-      if (sectionSelect.value) params.set('sectionId', sectionSelect.value);
-      else params.delete('sectionId');
-      window.location.search = params.toString();
-    });
+    sectionSelect.addEventListener('change', function () { state.sectionId = sectionSelect.value; state.page = 0; load(); });
+
+    var subjectSelect = pages.select([{ value: '', label: 'All subjects' }].concat(data.scope.subjects.map(function (subject) { return { value: subject.id, label: subject.name }; })), { value: state.subjectId });
+    subjectSelect.id = 'dash-subject';
+    subjectSelect.addEventListener('change', function () { state.subjectId = subjectSelect.value; state.page = 0; load(); });
+
     return el('div', { class: 'row row--wrap gap-2' },
+      subjectSelect,
       sectionSelect,
-      el('button', { class: 'btn', type: 'button', onClick: function () { window.location.reload(); } }, el('span', { html: icon('refresh') }), 'Refresh'),
-      el('button', { class: 'btn btn--soft', type: 'button', onClick: function () { EG.api.download('/api/export/at-risk.csv' + EG.api.query({ sectionId: new URLSearchParams(window.location.search).get('sectionId') })).catch(function (error) { ui.toast(error.message, 'error'); }); } }, el('span', { html: icon('download') }), 'At-risk CSV')
+      el('button', { class: 'btn', type: 'button', onClick: function () { load(); } }, el('span', { html: icon('refresh') }), 'Refresh'),
+      el('button', { class: 'btn btn--soft', type: 'button', onClick: function () { EG.api.download('/api/export/at-risk.csv' + EG.api.query({ sectionId: state.sectionId, subjectId: state.subjectId })).catch(function (error) { ui.toast(error.message, 'error'); }); } }, el('span', { html: icon('download') }), 'At-risk CSV')
     );
   }
 
-  pages.guard(function (session) {
+  function load() {
+    writeQuery();
     pages.mount({ title: 'Dashboard', subtitle: 'Loading your workspace…', content: ui.skeletonPage() });
-    var sectionId = new URLSearchParams(window.location.search).get('sectionId');
-    return EG.api.get('/api/analytics/dashboard', { sectionId: sectionId || undefined }).then(function (data) {
-      render(data, session);
+    return Promise.all([
+      EG.api.get('/api/analytics/dashboard', { sectionId: state.sectionId || undefined, subjectId: state.subjectId || undefined }),
+      EG.api.get('/api/students', {
+        sectionId: state.sectionId || undefined,
+        subjectId: state.subjectId || undefined,
+        limit: PAGE_SIZE,
+        offset: state.page * PAGE_SIZE,
+        sort: 'priority'
+      })
+    ]).then(function (result) {
+      render(result[0], result[1], EG.session);
     });
+  }
+
+  pages.guard(function () {
+    readQuery();
+    return load();
   });
 })();

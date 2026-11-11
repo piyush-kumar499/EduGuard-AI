@@ -53,29 +53,104 @@
   }
 
   function credentialModal(data, email) {
+    var generated = Boolean(data.temporaryPassword);
     var code = el('code', { class: 'code-block', text: data.temporaryPassword || '' });
     var modal = ui.modal({
-      title: 'Share this password once',
-      subtitle: 'It will not be shown again after this dialog closes.',
+      title: generated ? 'Share this password once' : 'Password set',
+      subtitle: generated ? 'It will not be shown again after this dialog closes.' : 'Share it through a private channel.',
       narrow: true,
       body: el('div', { class: 'stack' },
-        el('div', { class: 'info-box' }, 'Send this password to ' + email + ' through a private channel. They must change it after signing in.'),
-        code,
+        el('div', { class: 'info-box' }, generated
+          ? 'Send this password to ' + email + ' through a private channel. They must change it after signing in.'
+          : 'The account for ' + email + ' now uses the password you set. ' + (data.mustChangePassword ? 'They must change it after signing in.' : 'They can sign in with it now.')),
+        generated ? code : null,
         data.note ? el('p', { class: 'xs faint', text: data.note }) : null
       ),
       footer: el('div', { class: 'row row--end gap-2 w-100' },
-        el('button', { class: 'btn', type: 'button', onClick: function () { pages.copy(data.temporaryPassword || ''); } },
-          el('span', { html: icon('copy', 14) }), 'Copy password'),
+        generated ? el('button', { class: 'btn', type: 'button', onClick: function () { pages.copy(data.temporaryPassword || ''); } },
+          el('span', { html: icon('copy', 14) }), 'Copy password') : null,
         el('button', { class: 'btn btn--primary', type: 'button', onClick: function () { modal.close(); } }, 'Done')
       )
     });
   }
 
+  function passwordStrength(value) {
+    var text = String(value || '');
+    var score = 0;
+    if (text.length >= 10) score += 1;
+    if (text.length >= 14) score += 1;
+    if (/[a-z]/.test(text) && /[A-Z]/.test(text)) score += 1;
+    if (/\d/.test(text)) score += 1;
+    if (/[^A-Za-z0-9]/.test(text)) score += 1;
+    if (!text) return { score: 0, label: 'Use at least 10 characters with a letter and a number.' };
+    if (score <= 2) return { score: 2, label: 'Weak: add length and a number.' };
+    if (score === 3) return { score: 3, label: 'Fair: add a capital letter or symbol.' };
+    return { score: 4, label: 'Strong password.' };
+  }
+
+  function passwordBlock(fields, options) {
+    options = options || {};
+    var meter = el('div', { class: 'pw-meter', 'aria-live': 'polite' },
+      el('span', { class: 'pw-meter__track' }, el('span', { class: 'pw-meter__fill' })),
+      el('span', { class: 'pw-meter__label', text: passwordStrength('').label })
+    );
+    var canMatch = true;
+    return {
+      fields: fields,
+      extra: meter,
+      afterRender: function (inputs) {
+        var password = inputs.password;
+        var confirm = inputs.confirmPassword;
+        if (!password) return;
+        var fieldNode = password.closest ? password.closest('.field') : password.parentNode;
+        if (fieldNode && fieldNode.parentNode) fieldNode.parentNode.insertBefore(meter, fieldNode.nextSibling);
+        var fill = meter.querySelector('.pw-meter__fill');
+        var label = meter.querySelector('.pw-meter__label');
+        password.addEventListener('input', function () {
+          var strength = passwordStrength(password.value);
+          fill.style.width = (strength.score >= 4 ? 100 : strength.score === 3 ? 70 : 40) + '%';
+          fill.dataset.level = strength.score >= 4 ? 'strong' : strength.score >= 3 ? 'fair' : 'weak';
+          label.textContent = strength.label;
+        });
+        if (confirm) {
+          confirm.addEventListener('input', function () {
+            canMatch = !password.value || confirm.value === password.value;
+            confirm.setAttribute('aria-invalid', canMatch ? 'false' : 'true');
+          });
+        }
+      },
+      validate: function (values) {
+        if (!values.password) {
+          if (options.required) return 'Set a password for this account.';
+          if (values.confirmPassword) return 'Confirm the password you entered.';
+          return null;
+        }
+        if (values.password.length < 10) return 'The password must be at least 10 characters.';
+        if (!/[A-Za-z]/.test(values.password) || !/\d/.test(values.password)) return 'The password must include a letter and a number.';
+        if (values.password !== values.confirmPassword) return 'The two passwords do not match.';
+        return null;
+      }
+    };
+  }
+
   function createUser() {
     var createdAccount = null;
+    var password = passwordBlock([
+      {
+        name: 'password', label: 'Password (optional)', type: 'password', span: true,
+        autocomplete: 'new-password',
+        hint: 'Leave blank to generate a temporary password. Minimum 10 characters with a letter and a number.'
+      },
+      { name: 'confirmPassword', label: 'Confirm password', type: 'password', autocomplete: 'new-password' },
+      {
+        name: 'requireChange', label: 'Require a password change at next sign-in', type: 'checkbox',
+        value: true, span: true,
+        hint: 'The person is prompted to choose their own password after signing in.'
+      }
+    ], { required: false });
     pages.formModal({
       title: 'Add a person',
-      subtitle: 'A temporary password is generated unless you set one.',
+      subtitle: 'Set a password yourself, or generate a temporary one to share once.',
       submitLabel: 'Create account',
       fields: [
         { name: 'name', label: 'Full name', placeholder: 'Dr. Maya Iyer' },
@@ -84,21 +159,22 @@
           name: 'role', label: 'Role', type: 'select', value: 'FACULTY',
           options: [{ value: 'FACULTY', label: 'Faculty' }, { value: 'HOD', label: 'Head of department' }],
           hint: 'HOD accounts can see and manage the whole department.'
-        },
-        {
-          name: 'password', label: 'Password (optional)', type: 'password',
-          autocomplete: 'new-password',
-          hint: 'Leave blank to generate a temporary password. Minimum 10 characters with a letter and a number.'
         }
-      ],
+      ].concat(password.fields),
+      extra: password.extra,
+      afterRender: password.afterRender,
       validate: function (values) {
         if (!values.name || values.name.length < 2) return 'Enter the person\'s full name.';
         if (!values.email.includes('@')) return 'Enter a valid email address.';
-        if (values.password && values.password.length < 10) return 'The password must be at least 10 characters.';
-        return null;
+        return password.validate(values);
       },
       onSubmit: function (values) {
-        var body = { name: values.name, email: values.email, role: values.role };
+        var body = {
+          name: values.name,
+          email: values.email,
+          role: values.role,
+          requireChange: Boolean(values.requireChange)
+        };
         if (values.password) body.password = values.password;
         return EG.api.post('/api/users', body).then(function (created) {
           createdAccount = created;
@@ -112,9 +188,17 @@
   }
 
   function editUser(user) {
+    var password = passwordBlock([
+      { name: 'password', label: 'New password (optional)', type: 'password', span: true, autocomplete: 'new-password', hint: 'Leave blank to keep the current password. Setting one signs them out everywhere.' },
+      { name: 'confirmPassword', label: 'Confirm new password', type: 'password', autocomplete: 'new-password' },
+      {
+        name: 'mustChangePassword', label: 'Require a password change at next sign-in', type: 'checkbox',
+        value: Boolean(user.must_change_password), span: true
+      }
+    ], { required: false });
     pages.formModal({
       title: 'Edit ' + user.name,
-      subtitle: 'Name, email and role changes are recorded in the audit log.',
+      subtitle: 'Name, email, role and password changes are recorded in the audit log.',
       submitLabel: 'Save changes',
       fields: [
         { name: 'name', label: 'Full name', value: user.name },
@@ -124,14 +208,23 @@
           options: [{ value: 'FACULTY', label: 'Faculty' }, { value: 'HOD', label: 'Head of department' }],
           hint: 'You cannot change your own role. At least one active HOD must remain.'
         }
-      ],
+      ].concat(password.fields),
+      extra: password.extra,
+      afterRender: password.afterRender,
       validate: function (values) {
         if (!values.name || values.name.length < 2) return 'Enter a full name.';
         if (!values.email.includes('@')) return 'Enter a valid email address.';
-        return null;
+        return password.validate(values);
       },
       onSubmit: function (values) {
-        return EG.api.patch('/api/users/' + encodeURIComponent(user.id), values).then(function () {
+        var body = {
+          name: values.name,
+          email: values.email,
+          role: values.role,
+          mustChangePassword: Boolean(values.mustChangePassword)
+        };
+        if (values.password) body.password = values.password;
+        return EG.api.patch('/api/users/' + encodeURIComponent(user.id), body).then(function () {
           ui.toast('Account updated.', 'success');
           return refresh();
         });
@@ -176,6 +269,52 @@
     });
   }
 
+  function deleteUser(user) {
+    var input = el('input', {
+      class: 'input', type: 'email', placeholder: user.email,
+      autocomplete: 'off', 'aria-label': 'Type the account email to confirm deletion'
+    });
+    var errorBox = el('div', { class: 'error-box', hidden: true });
+    var confirmButton = el('button', { class: 'btn btn--danger', type: 'button', disabled: 'disabled' }, 'Delete account');
+    var modal = ui.modal({
+      title: 'Delete ' + user.name + '?',
+      subtitle: 'This removes the account and its teaching assignments. Assessment and attendance history is transferred to you so the audit trail stays intact.',
+      narrow: true,
+      body: el('div', { class: 'stack' },
+        el('div', { class: 'info-box is-danger' }, 'This cannot be undone. If you only need to pause access, deactivate the account instead.'),
+        el('div', { class: 'field' },
+          el('label', { text: 'Type ' + user.email + ' to confirm' }),
+          input
+        ),
+        errorBox
+      ),
+      footer: el('div', { class: 'row row--end gap-2 w-100' },
+        el('button', { class: 'btn', type: 'button', onClick: function () { modal.close(); } }, 'Cancel'),
+        confirmButton
+      )
+    });
+    input.addEventListener('input', function () {
+      confirmButton.disabled = input.value.trim().toLowerCase() !== String(user.email).toLowerCase();
+    });
+    confirmButton.addEventListener('click', function () {
+      confirmButton.disabled = true;
+      confirmButton.innerHTML = '<span class="spinner" aria-hidden="true"></span> Deleting…';
+      errorBox.hidden = true;
+      EG.api.del('/api/users/' + encodeURIComponent(user.id), { confirmEmail: input.value.trim() }).then(function (result) {
+        modal.close();
+        var transferred = result && result.transferred ? result.transferred : {};
+        ui.toast('Account deleted. ' + (transferred.assessments || 0) + ' assessments and ' + (transferred.attendanceSessions || 0) + ' attendance sessions were transferred.', 'success');
+        return refresh();
+      }).catch(function (error) {
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'Delete account';
+        errorBox.hidden = false;
+        errorBox.innerHTML = ui.icon('warning', 17) + '<div>' + ui.esc(error.message) + '</div>';
+      });
+    });
+    setTimeout(function () { input.focus(); }, 40);
+  }
+
   function assignmentsNode(user) {
     if (user.role === 'HOD') return el('span', { class: 'xs faint', text: 'Department-wide access' });
     if (!user.assignments.length) return el('span', { class: 'pill pill--medium', text: 'Unassigned' });
@@ -194,7 +333,13 @@
         class: 'btn btn--sm ' + (user.active ? 'btn--danger-ghost' : ''),
         type: 'button', title: user.active ? 'Deactivate account' : 'Reactivate account',
         onClick: function () { toggleActive(user); }
-      }, el('span', { html: icon(user.active ? 'lock' : 'unlock', 13) }), user.active ? 'Deactivate' : 'Reactivate')
+      }, el('span', { html: icon(user.active ? 'lock' : 'unlock', 13) }), user.active ? 'Deactivate' : 'Reactivate'),
+      user.role === 'FACULTY' && user.id !== EG.session.user.id
+        ? el('button', {
+          class: 'btn btn--sm btn--danger-ghost', type: 'button', title: 'Delete this faculty account',
+          onClick: function () { deleteUser(user); }
+        }, el('span', { html: icon('trash', 13) }), 'Delete')
+        : null
     );
     return el('tr', { class: user.active ? null : 'inactive-row' },
       el('td', null,
@@ -314,7 +459,7 @@
 
     pages.mount({
       title: 'Faculty',
-      subtitle: 'Accounts, roles, teaching load and password resets for the department.',
+      subtitle: 'Accounts, roles, password setup, teaching load and account deletion.',
       actions: el('div', { class: 'btn-row' },
         el('button', { class: 'btn', type: 'button', onClick: exportCsv }, el('span', { html: icon('download') }), 'CSV'),
         el('button', { class: 'btn btn--primary', type: 'button', onClick: createUser }, el('span', { html: icon('plus') }), 'Add person')

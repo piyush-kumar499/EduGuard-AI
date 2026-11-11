@@ -78,7 +78,13 @@
     link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
     zap: '<path d="M13 2 3 14h8l-1 8 10-12h-8z"/>',
     award: '<circle cx="12" cy="8" r="6"/><path d="m8.2 13.4-1.4 7.1 5.2-3 5.2 3-1.4-7.1"/>',
-    database2: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>'
+    database2: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>',
+    close: '<path d="M18 6 6 18M6 6l12 12"/>',
+    collapse: '<path d="M15 5 8 12l7 7"/><path d="M19 5v14"/>',
+    chevron: '<path d="m6 9 6 6 6-6"/>',
+    wave: '<path d="M3 10v4M7 7v10M11 4v16M15 8v8M19 11v2"/>',
+    userPlus: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/>'
   };
 
   function icon(name, size) {

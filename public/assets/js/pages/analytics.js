@@ -10,9 +10,18 @@
 
   var state = {
     dashboard: null, fairness: null,
+    dashboardSubjectId: '',
     subjectId: '', sectionId: '', detail: null,
-    detailHost: null, subjectSelect: null, sectionSelect: null
+    detailHost: null, subjectSelect: null, sectionSelect: null, dashboardSubjectSelect: null
   };
+
+  function updateQuery() {
+    var params = new URLSearchParams(window.location.search);
+    if (state.dashboardSubjectId) params.set('subjectId', state.dashboardSubjectId);
+    else params.delete('subjectId');
+    var text = params.toString();
+    window.history.replaceState({}, '', window.location.pathname + (text ? '?' + text : ''));
+  }
 
   function statLine(label, value) {
     return el('div', { class: 'stat-line' }, el('span', { class: 'muted', text: label }), el('strong', { text: value }));
@@ -134,6 +143,22 @@
       { label: 'Section gap', value: ui.num(fairness.gap) + ' pts', icon: 'activity', tone: fairness.warning ? 'warning' : 'success', foot: fairness.warning ? 'Review the fairness check' : 'Sections are comparable' }
     ];
 
+    state.detailHost.textContent = '';
+    var dashboardSubjects = pages.subjects().map(function (subject) { return { value: subject.id, label: subject.name }; });
+    if (dashboardSubjects.length) {
+      state.dashboardSubjectSelect = pages.select(
+        [{ value: '', label: 'All my subjects' }].concat(dashboardSubjects),
+        { value: state.dashboardSubjectId }
+      );
+      state.dashboardSubjectSelect.setAttribute('aria-label', 'Filter analytics by subject');
+      state.dashboardSubjectSelect.addEventListener('change', function () {
+        state.dashboardSubjectId = state.dashboardSubjectSelect.value;
+        if (state.dashboardSubjectId) state.subjectId = state.dashboardSubjectId;
+        updateQuery();
+        loadDashboard();
+      });
+    }
+
     var subjectOptions = pages.subjects().map(function (subject) { return { value: subject.id, label: subject.name }; });
     if (!subjectOptions.length) {
       state.detailHost.appendChild(pages.empty('No subjects in scope', 'Analytics needs at least one assigned subject.', null, 'book'));
@@ -171,7 +196,10 @@
     pages.mount({
       title: 'Analytics',
       subtitle: data.term.name + ' - patterns that deserve a closer look, never automatic decisions.',
-      actions: el('div', { class: 'btn-row' },
+      actions: el('div', { class: 'row row--wrap gap-2 row--end' },
+        state.dashboardSubjectSelect
+          ? el('div', { class: 'field-inline' }, el('span', { text: 'Subject' }), state.dashboardSubjectSelect)
+          : null,
         el('button', { class: 'btn', type: 'button', onClick: function () { EG.api.download('/api/export/at-risk.csv').catch(function (error) { ui.toast(error.message, 'error'); }); } }, el('span', { html: icon('download') }), 'At-risk CSV'),
         el('a', { class: 'btn btn--soft', href: '/heatmap' }, el('span', { html: icon('heatmap') }), 'Heatmap')
       ),
@@ -292,11 +320,10 @@
     });
   }
 
-  pages.guard(function () {
-    pages.mount({ title: 'Analytics', subtitle: 'Loading analytics...', content: ui.skeletonPage() });
-    state.detailHost = el('div', { class: 'stack' });
+  function loadDashboard() {
+    var params = state.dashboardSubjectId ? { subjectId: state.dashboardSubjectId } : {};
     return Promise.all([
-      EG.api.get('/api/analytics/dashboard'),
+      EG.api.get('/api/analytics/dashboard', params),
       EG.api.get('/api/analytics/fairness')
     ]).then(function (results) {
       state.dashboard = results[0];
@@ -311,5 +338,14 @@
       });
       ui.toast(error.message, 'error');
     });
+  }
+
+  pages.guard(function () {
+    pages.mount({ title: 'Analytics', subtitle: 'Loading analytics...', content: ui.skeletonPage() });
+    state.detailHost = el('div', { class: 'stack' });
+    var wanted = new URLSearchParams(window.location.search).get('subjectId') || '';
+    state.dashboardSubjectId = wanted;
+    state.subjectId = wanted;
+    return loadDashboard();
   });
 })();

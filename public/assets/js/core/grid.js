@@ -166,6 +166,7 @@
         el('span', null, 'Type ', el('strong', { text: 'A' }), ' for absent'),
         el('span', null, 'Type ', el('strong', { text: 'E' }), ' for exempt'),
         el('span', null, 'Leave blank to clear'),
+        el('span', null, 'Ctrl+D fills down'),
         el('span', null, 'Paste a column from a spreadsheet to fill down')
       ),
       el('div', { class: 'save-state', dataset: { saveState: 'true' } },
@@ -237,6 +238,11 @@
       this.flush(true);
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
+      event.preventDefault();
+      this.fillDown(pos);
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
       if (this.options.onUndo) {
         event.preventDefault();
@@ -305,6 +311,31 @@
       this.onInput(input);
       this.flush();
     }
+  };
+
+  /* Ctrl+D: copy this cell into every editable cell below it in the column. */
+  MarksGrid.prototype.fillDown = function (pos) {
+    var source = this.cellAt(pos.row, pos.col);
+    if (!source) return;
+    if (source.readOnly) {
+      ui.toast('This column is finalised and read-only.', 'error');
+      return;
+    }
+    var value = source.value;
+    var row = pos.row + 1;
+    var filled = 0;
+    var target = null;
+    while ((target = this.cellAt(row, pos.col))) {
+      if (!target.readOnly) {
+        target.value = value;
+        this.onInput(target);
+        filled += 1;
+      }
+      row += 1;
+    }
+    if (filled) ui.toast('Filled ' + filled + ' ' + ui.plural(filled, 'cell') + ' down.', 'success');
+    else ui.toast('There are no editable cells below this one.', 'error');
+    this.flush();
   };
 
   MarksGrid.prototype.keyFor = function (input) {

@@ -78,9 +78,11 @@
           ),
           el('span', { class: 'kpi__icon', html: icon('book', 15) })
         ),
-        el('div', { class: 'row row--between gap-2 small' },
+        el('div', { class: 'row row--wrap row--between gap-2 small' },
           el('span', { class: 'muted', text: card.students + ' students' }),
           el('span', { class: 'muted', text: card.assessments + ' ' + ui.plural(card.assessments, 'assessment') }),
+          el('span', { class: 'muted', text: 'Attendance ' + ui.pct(card.attendance) }),
+          el('span', { class: 'muted', text: 'Coursework ' + ui.pct(card.coursework) }),
           card.atRisk ? el('span', { class: 'pill pill--high', text: card.atRisk + ' need support' }) : el('span', { class: 'pill pill--low', text: 'No high flags' })
         ),
         el('div', null,

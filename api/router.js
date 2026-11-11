@@ -33,6 +33,7 @@ function buildApp() {
   router.addAll(require('../lib/routes/attendance'));
   router.addAll(require('../lib/routes/analytics'));
   router.addAll(require('../lib/routes/reports'));
+  router.addAll(require('../lib/routes/alerts'));
   router.addAll(require('../lib/routes/actions'));
   router.addAll(require('../lib/routes/settings'));
   router.addAll(require('../lib/routes/audit'));

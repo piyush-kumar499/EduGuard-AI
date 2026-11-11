@@ -11,13 +11,15 @@
   var state = {
     tab: 'class', picker: null, classData: null, studentData: null,
     students: [], studentId: '', classHost: null, studentHost: null,
-    classPane: null, studentPane: null, studentSelect: null,
+    supportHost: null, supportData: null, supportBuilt: false,
+    classPane: null, studentPane: null, supportPane: null, studentSelect: null,
     classBuilt: false, studentBuilt: false
   };
 
   function updateQuery() {
     var params = new URLSearchParams();
     if (state.tab === 'student') params.set('tab', 'student');
+    if (state.tab === 'support') params.set('tab', 'support');
     var pair = state.picker ? state.picker.value() : null;
     if (pair && pair.subjectId) params.set('subjectId', pair.subjectId);
     if (pair && pair.sectionId) params.set('sectionId', pair.sectionId);
@@ -30,11 +32,13 @@
     state.tab = tab;
     if (state.classPane) state.classPane.hidden = tab !== 'class';
     if (state.studentPane) state.studentPane.hidden = tab !== 'student';
+    if (state.supportPane) state.supportPane.hidden = tab !== 'support';
     document.querySelectorAll('[data-report-tab]').forEach(function (button) {
       button.classList.toggle('is-active', button.dataset.reportTab === tab);
     });
     updateQuery();
     if (tab === 'class' && !state.classBuilt) buildClass();
+    if (tab === 'support' && !state.supportBuilt) buildSupport();
     if (tab === 'student' && state.studentId && !state.studentBuilt) buildStudent();
   }
 
@@ -197,6 +201,79 @@
     ));
   }
 
+  function renderSupport(data) {
+    state.supportData = data;
+    state.supportHost.textContent = '';
+    var rows = (data.students || [])
+      .filter(function (student) { return student.hasData && student.level !== 'low'; })
+      .sort(function (a, b) { return (a.score || 0) - (b.score || 0); });
+    var body = el('tbody');
+    if (!rows.length) {
+      body.appendChild(el('tr', null, el('td', { colspan: '8', text: 'No students are currently flagged. Nothing needs escalating from this term.' })));
+    }
+    rows.forEach(function (student) {
+      body.appendChild(el('tr', null,
+        el('td', { class: 'mono', text: student.roll }),
+        el('td', null,
+          el('a', { class: 'row-link strong', href: pages.studentHref(student.id), text: student.name }),
+          el('div', { class: 'person__sub', text: student.sectionName })
+        ),
+        el('td', { class: 'num', text: ui.pct(student.attendance) }),
+        el('td', { class: 'num', text: ui.pct(student.coursework) }),
+        el('td', { class: 'num', text: ui.pct(student.marks) }),
+        el('td', { class: 'num', text: ui.pct(student.forecast) }),
+        el('td', null, el('span', { html: ui.levelPill(student.level, student.levelLabel) })),
+        el('td', { class: 'small', text: student.topFactor || '—' })
+      ));
+    });
+
+    state.supportHost.appendChild(el('div', { class: 'report-paper report-paper--wide' },
+      reportHead(data.scope.role === 'HOD' ? 'Students needing support' : 'Your classes: students needing support', 'Support list', {
+        term: data.term ? data.term.name : 'Active term',
+        scope: data.scope.role === 'HOD' ? 'Whole department' : 'Your assigned classes'
+      }),
+      el('div', { class: 'row row--between gap-3 mt-3 no-print' },
+        el('p', { class: 'muted small', text: rows.length + ' ' + ui.plural(rows.length, 'student') + ' outside the on-track band. Use the list as a starting point for conversations, not as a ranking of students.' }),
+        el('button', {
+          class: 'btn btn--sm', type: 'button',
+          onClick: function () {
+            EG.api.download('/api/export/at-risk.csv').then(function () {
+              ui.toast('At-risk CSV downloaded.', 'success');
+            }).catch(function (error) { ui.toast(error.message, 'error'); });
+          }
+        }, el('span', { html: icon('download', 13) }), 'Download CSV')
+      ),
+      el('div', { class: 'table-wrap mt-3' },
+        el('table', { class: 'report-table' },
+          el('thead', null, el('tr', null,
+            el('th', { text: 'Roll' }), el('th', { text: 'Student' }),
+            el('th', { class: 'num', text: 'Attendance' }), el('th', { class: 'num', text: 'Coursework' }),
+            el('th', { class: 'num', text: 'Marks' }), el('th', { class: 'num', text: 'Forecast' }),
+            el('th', { text: 'Band' }), el('th', { text: 'Main factor' })
+          )),
+          body
+        )
+      ),
+      el('p', { class: 'report-meta mt-3', text: 'Generated ' + ui.dateTime(new Date().toISOString()) + '. Signals are scoped to your role. A low score is a prompt for support, never a label.' })
+    ));
+  }
+
+  function buildSupport() {
+    state.supportBuilt = true;
+    state.supportHost.textContent = '';
+    state.supportHost.appendChild(el('div', { class: 'page-loader' }, el('div', { class: 'skeleton skeleton--card' })));
+    updateQuery();
+    return EG.api.get('/api/analytics/dashboard').then(function (data) {
+      renderSupport(data);
+    }).catch(function (error) {
+      if (error.status === 401) return;
+      state.supportBuilt = false;
+      state.supportHost.textContent = '';
+      state.supportHost.appendChild(ui.errorState(error, buildSupport));
+      ui.toast(error.message, 'error');
+    });
+  }
+
   function buildClass() {
     if (!state.picker) return Promise.resolve();
     var pair = state.picker.value();
@@ -253,6 +330,12 @@
   }
 
   function exportCsv() {
+    if (state.tab === 'support') {
+      EG.api.download('/api/export/at-risk.csv').then(function () {
+        ui.toast('At-risk CSV downloaded.', 'success');
+      }).catch(function (error) { ui.toast(error.message, 'error'); });
+      return;
+    }
     if (state.tab === 'class' && state.classData) {
       var data = state.classData;
       var rows = data.students.map(function (student) {
@@ -303,7 +386,9 @@
       return Promise.resolve(null);
     }
     state.studentId = params.get('studentId') || '';
-    state.tab = params.get('tab') === 'student' || state.studentId ? 'student' : 'class';
+    state.tab = params.get('tab') === 'support'
+      ? 'support'
+      : params.get('tab') === 'student' || state.studentId ? 'student' : 'class';
     var wanted = params.get('subjectId') && params.get('sectionId')
       ? list.find(function (pair) { return pair.subjectId === params.get('subjectId') && pair.sectionId === params.get('sectionId'); })
       : null;
@@ -313,13 +398,15 @@
     state.picker = pages.pairPicker({ value: wanted || list[0] });
     state.classHost = el('div');
     state.studentHost = el('div');
+    state.supportHost = el('div');
     state.studentSelect = pages.select(state.students.map(function (student) {
       return { value: student.id, label: student.name };
     }), { value: state.studentId });
 
     var tabs = el('div', { class: 'tabs' },
       el('button', { class: 'tab' + (state.tab === 'class' ? ' is-active' : ''), type: 'button', dataset: { reportTab: 'class' }, onClick: function () { switchTab('class'); } }, 'Class report'),
-      el('button', { class: 'tab' + (state.tab === 'student' ? ' is-active' : ''), type: 'button', dataset: { reportTab: 'student' }, onClick: function () { switchTab('student'); } }, 'Student report')
+      el('button', { class: 'tab' + (state.tab === 'student' ? ' is-active' : ''), type: 'button', dataset: { reportTab: 'student' }, onClick: function () { switchTab('student'); } }, 'Student report'),
+      el('button', { class: 'tab' + (state.tab === 'support' ? ' is-active' : ''), type: 'button', dataset: { reportTab: 'support' }, onClick: function () { switchTab('support'); } }, 'Support list')
     );
 
     state.classPane = el('div', { hidden: state.tab !== 'class' },
@@ -353,23 +440,28 @@
       el('div', { class: 'mt-4' }, state.studentHost)
     );
 
+    state.supportPane = el('div', { hidden: state.tab !== 'support' }, state.supportHost);
+
     pages.mount({
       title: 'Reports',
-      subtitle: 'Printable, plain-language reports for a class or one student.',
+      subtitle: 'Printable, plain-language reports for a class, one student, or the support list.',
       actions: el('div', { class: 'btn-row' },
         el('button', { class: 'btn', type: 'button', onClick: function () { window.print(); } }, el('span', { html: icon('printer') }), 'Print'),
         el('button', { class: 'btn', type: 'button', onClick: exportCsv }, el('span', { html: icon('download') }), 'CSV'),
         el('button', { class: 'btn btn--soft', type: 'button', onClick: function () {
-          if (state.tab === 'class') buildClass(); else buildStudent();
+          if (state.tab === 'class') buildClass();
+          else if (state.tab === 'support') buildSupport();
+          else buildStudent();
         } }, el('span', { html: icon('refresh') }), 'Rebuild')
       ),
-      content: el('div', { class: 'stack' }, tabs, state.classPane, state.studentPane)
+      content: el('div', { class: 'stack' }, tabs, state.classPane, state.studentPane, state.supportPane)
     });
 
     updateQuery();
     loadStudents().then(function () {
       if (state.studentId && state.studentSelect) state.studentSelect.value = state.studentId;
       if (state.tab === 'class') buildClass();
+      else if (state.tab === 'support') buildSupport();
       else if (state.studentId) buildStudent();
     });
     return Promise.resolve(null);
