@@ -1,0 +1,155 @@
+/* EduGuard design tokens — one source of truth for colour, type, spacing. */
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/assets/fonts/manrope-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/assets/fonts/source-sans-3-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/fonts/source-sans-3-italic-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --bg: #f5f6fa;
+  --bg-soft: #eef0f7;
+  --surface: #ffffff;
+  --surface-2: #fafbfd;
+  --surface-3: #f2f4f9;
+  --overlay: rgb(15 18 32 / 48%);
+  --line: #e3e6ef;
+  --line-strong: #ccd2e1;
+
+  /* ink */
+  --ink: #121728;
+  --ink-2: #3d465c;
+  --muted: #626d85;
+  --faint: #8b94a9;
+  --on-brand: #ffffff;
+
+  /* brand and accents */
+  --brand: #4f46e5;
+  --brand-hover: #4338ca;
+  --brand-strong: #312e81;
+  --brand-soft: #eef0ff;
+  --brand-line: #d9dcff;
+  --accent: #0f766e;
+  --accent-soft: #e7f7f4;
+
+  /* semantic */
+  --danger: #b42318;
+  --danger-hover: #912018;
+  --danger-soft: #fef1f0;
+  --warning: #a15c07;
+  --warning-soft: #fff6e5;
+  --success: #067647;
+  --success-soft: #e9f8f0;
+  --info: #175cd3;
+  --info-soft: #eff6ff;
+
+  /* type */
+  --font-display: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Source Sans 3", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-base: 0.9375rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.375rem;
+  --fs-2xl: 1.75rem;
+  --fs-3xl: clamp(1.75rem, 1.2rem + 1.6vw, 2.35rem);
+  --lh-tight: 1.2;
+  --lh-base: 1.55;
+
+  /* spacing */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 40px;
+  --sp-9: 56px;
+
+  /* shape and depth */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+  --shadow-xs: 0 1px 2px rgb(18 23 40 / 5%);
+  --shadow-sm: 0 1px 2px rgb(18 23 40 / 5%), 0 8px 20px -14px rgb(18 23 40 / 22%);
+  --shadow: 0 1px 3px rgb(18 23 40 / 5%), 0 18px 40px -24px rgb(18 23 40 / 30%);
+  --shadow-lg: 0 32px 72px -32px rgb(18 23 40 / 42%);
+
+  /* layout */
+  --sidebar-w: 264px;
+  --topbar-h: 64px;
+  --content-max: 1440px;
+  --z-sidebar: 40;
+  --z-topbar: 50;
+  --z-drawer: 70;
+  --z-modal: 80;
+  --z-toast: 90;
+  --z-command: 100;
+
+  /* motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --speed: 160ms;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1020;
+  --bg-soft: #12162a;
+  --surface: #151a2e;
+  --surface-2: #191f35;
+  --surface-3: #1e253d;
+  --overlay: rgb(3 5 12 / 66%);
+  --line: #262d45;
+  --line-strong: #37405c;
+  --ink: #f1f3fa;
+  --ink-2: #c9cfe0;
+  --muted: #a2abc2;
+  --faint: #7f89a3;
+  --brand: #7c75ff;
+  --brand-hover: #9993ff;
+  --brand-strong: #c4c0ff;
+  --brand-soft: #24234a;
+  --brand-line: #3b3a6c;
+  --accent: #2dd4bf;
+  --accent-soft: #123331;
+  --danger: #ff8b80;
+  --danger-hover: #ffa79f;
+  --danger-soft: #3a1a1a;
+  --warning: #ffc266;
+  --warning-soft: #3a2a10;
+  --success: #6ee7b7;
+  --success-soft: #11342a;
+  --info: #8ab8ff;
+  --info-soft: #16243d;
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 30%), 0 10px 24px -16px rgb(0 0 0 / 60%);
+  --shadow: 0 2px 6px rgb(0 0 0 / 30%), 0 20px 44px -24px rgb(0 0 0 / 70%);
+  --shadow-lg: 0 34px 80px -30px rgb(0 0 0 / 80%);
+}

@@ -1,13 +1,17 @@
-/freebuff-sites-build/
-/.freebuff/
-
-# Local secrets must never be committed
+# Secrets must never be committed
 .env
 .env.local
 .env*.local
+
+# Build / tool artifacts (not part of the deliverable)
+/freebuff-sites-build/
+/.freebuff/
+
+# Dependencies
+node_modules/
 
 # OS / editor noise
 .DS_Store
 Thumbs.db
 *.log
-node_modules/
+.vercel

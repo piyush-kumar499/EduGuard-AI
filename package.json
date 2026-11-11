@@ -1,0 +1,21 @@
+{
+  "name": "eduguard",
+  "version": "2.0.0",
+  "private": true,
+  "description": "EduGuard v2 - a role-based, multi-user student support workspace for college departments.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node dev-server.js",
+    "start": "node dev-server.js",
+    "migrate": "node db/migrate.js",
+    "seed": "node db/seed.js",
+    "seed:reset": "node db/seed.js --reset-demo",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.15"
+  }
+}
