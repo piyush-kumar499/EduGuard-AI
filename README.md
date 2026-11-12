@@ -31,7 +31,23 @@ Workspace: `/dashboard`, `/students`, `/student?id=…`, `/marks`, `/attendance`
 
 HOD only: `/faculty`, `/structure`, `/assignments`, `/progress`, `/audit`, `/settings`, `/terms`.
 
-Every page shares a responsive sidebar shell, a page header, light/dark themes, a command palette (`Ctrl/Cmd + K`), keyboard shortcuts, and print styles.
+Every page shares a responsive sidebar shell, a page header, light/dark/system themes with a print-friendly light palette, a command palette (`Ctrl/Cmd + K`), keyboard shortcuts, and print styles.
+
+### Dashboard and student lists
+
+- KPI tiles for cohort size, high/medium/low band counts, flagged share, attendance and data completeness, plus the top recurring risk reasons and a per-subject breakdown.
+- The dashboard student table supports debounced search, band chips, sortable headers (with `aria-sort`), a trend column and a pager ("Showing 1–9 of 60"). Section, subject, band, sort and page are written to the URL, so a filtered view can be bookmarked or shared.
+- Subject filters narrow which rows appear; bands are always computed from the full analysis, so filtering never changes a student's score.
+- Late responses are guarded in the client with request tokens, so a slow request can never overwrite a newer filter result.
+
+### Mentoring and follow-up
+
+- Each student record lists suggested mentors and the current allocation; a mentor can be assigned or released from the student page.
+- Agreed next steps are stored as action items with an owner and due date, and overdue follow-ups surface on the dashboard.
+
+### Terms
+
+- Create, activate, archive and roll over academic terms. Rollover copies structure (subjects, sections, teaching assignments, schemes and assessment types) into the new term without copying marks or attendance.
 
 ### Marks workspace
 
@@ -55,6 +71,8 @@ One register per subject, section and date. A saved register is the source for a
 - Bands: on track (≥70), watch closely (50–69), needs support (<50). A student with no usable data is shown as **no entries**, not as a zero.
 - Class heatmap with a colour scale, band filters, section filter, search, sorting and CSV export.
 - Subject health, score distributions, section comparisons, hardest assessments and class-average trends.
+- A priority "Students to check in with" list per subject, ranked by support priority with the top contributing factor and a link to the filtered student list.
+- A what-if simulator on the student record: change attendance, coursework or a single mark and see the recalculated score, band and forecast using the same weights and thresholds as `lib/scoring.js`. It runs in the browser and never writes data.
 - Printable class and student reports with `@media print` rules.
 - Data-progress view for the HOD: completeness per subject and section, overdue groups and CSV export.
 
@@ -71,6 +89,7 @@ One register per subject, section and date. A saved register is the source for a
 
 - Passwords hashed with `scrypt`; sessions are signed HMAC cookies (`eg_session`) with `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
 - Replaceable session payloads: changing a password or deactivating an account ends existing sessions.
+- Active-session list on **Account**: device label, masked IP, last seen, a "This device" badge, per-session revoke and "Sign out other devices". Listing and revoking are audited, and revoking the current session signs you out.
 - CSRF protection: unsafe methods require a same-origin `Origin` and matching `Host`.
 - JSON content-type enforcement, request size limits, validation errors with field messages, and rate limits on login and AI.
 - Audit log for authentication, marks, attendance, assessments, assignments, users, terms and settings.
@@ -101,9 +120,11 @@ eduguard3/
 │   ├── permissions.js        # role scope, SQL filters, assertions
 │   ├── router.js             # method/path matching, auth, CSRF, JSON limits
 │   ├── scoring.js            # weights, schemes, bands, forecast, recovery paths
+│   ├── session-info.js       # masked IP and device label helpers
 │   └── routes/
 │       ├── actions.js        # mentor/action item endpoints
 │       ├── ai.js
+│       ├── alerts.js
 │       ├── analytics.js
 │       ├── assessments.js
 │       ├── assignments.js
@@ -129,7 +150,8 @@ eduguard3/
 │           └── pages/        # one module per page
 ├── tests/
 │   ├── permissions.test.js
-│   └── scoring.test.js
+│   ├── scoring.test.js
+│   └── session-info.test.js
 ├── .env.example
 ├── .gitignore
 ├── dev-server.js             # local Node server with the same router
@@ -210,7 +232,22 @@ $env:PORT=3200; node dev-server.js
 PORT=3200 node dev-server.js
 ```
 
-### 5. Tests
+### 5. Demo accounts
+
+The seed creates one HOD (from `HOD_EMAIL`) and five faculty accounts, each with three subject/section pairs:
+
+| Role | Email | Scope |
+| --- | --- | --- |
+| HOD | value of `HOD_EMAIL` | Whole department |
+| Faculty | `demo.maths@eduguard.local` | Maths — A, B, C |
+| Faculty | `demo.chemistry@eduguard.local` | Chemistry — A, B, C |
+| Faculty | `demo.computer-science@eduguard.local` | Computer Science — A, B, C |
+| Faculty | `demo.english@eduguard.local` | English — A, B, C |
+| Faculty | `demo.physics@eduguard.local` | Physics — A, B, C |
+
+Faculty passwords are generated randomly at seed time and printed once; they are never committed. To test a faculty role, sign in as the HOD and use **Faculty → Reset** (or `POST /api/users/:id/reset-password`) to set a known password. Demo credentials are for local evaluation only — set real passwords before exposing a deployment.
+
+### 6. Tests
 
 ```bash
 npm test
@@ -222,7 +259,7 @@ Or, if `npm` is restricted by a PowerShell execution policy:
 node --test tests/*.test.js
 ```
 
-The suites cover the scoring engine (weights, schemes, bands, penalties, forecast) and authorization scoping (faculty pairs, HOD access, SQL filters, payload shape).
+The suites cover the scoring engine (weights, schemes, bands, penalties, forecast), authorization scoping (faculty pairs, HOD access, SQL filters, payload shape) and the session display helpers (IPv4/IPv6 masking and device labels).
 
 ---
 
@@ -240,7 +277,7 @@ All responses use a consistent envelope:
 
 | Area | Endpoints |
 | --- | --- |
-| Auth | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/change-password` |
+| Auth | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/change-password`, `GET /api/auth/sessions`, `DELETE /api/auth/sessions/:id`, `DELETE /api/auth/sessions` |
 | Students | `GET/POST /api/students`, `GET/PATCH /api/students/:id`, `POST /api/students/import` |
 | Structure | `GET/POST/PATCH /api/sections`, `/api/subjects`, `/api/assessment-types` |
 | Schemes | `GET/PUT /api/schemes/:subjectId` |
@@ -251,8 +288,8 @@ All responses use a consistent envelope:
 | Attendance | `GET/PUT /api/attendance` |
 | Analytics | `GET /api/analytics/dashboard`, `/api/analytics/heatmap`, `/api/analytics/subjects`, `/api/analytics/subject/:id`, `/api/analytics/fairness`, `/api/analytics/progress` |
 | Reports | `GET /api/reports/class`, `GET /api/reports/student/:id`, `GET /api/export/at-risk.csv` |
-| Actions | `GET/PUT /api/students/:id/actions`, `GET/PUT /api/students/:id/mentors` |
-| Users | `GET/POST /api/users`, `PATCH /api/users/:id`, `POST /api/users/:id/reset-password` |
+| Actions | `GET /api/alerts`, `GET/PUT /api/students/:id/actions`, `GET/PUT /api/students/:id/mentors` |
+| Users | `GET/POST /api/users`, `PATCH/DELETE /api/users/:id`, `POST /api/users/:id/reset-password` |
 | Settings | `GET/PUT /api/settings` |
 | Audit | `GET /api/audit`, `GET /api/audit.csv` |
 | AI | `POST /api/ai` (`type: student \| weekly \| voice`) |
