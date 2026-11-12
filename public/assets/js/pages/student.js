@@ -110,10 +110,11 @@
   /* What-if simulator: client-side only, using the same weights as the indicator. */
   function simulatorCard(analysis) {
     if (!analysis.hasData) return null;
+    function round1(value) { return Math.round(Number(value) * 10) / 10; }
     var start = {
-      attendance: Math.round(Number(analysis.signals.attendance) || 0),
-      coursework: Math.round(Number(analysis.signals.coursework) || 0),
-      marks: Math.round(Number(analysis.signals.marks) || 0)
+      attendance: round1(Number(analysis.signals.attendance) || 0),
+      coursework: round1(Number(analysis.signals.coursework) || 0),
+      marks: round1(Number(analysis.signals.marks) || 0)
     };
     var penalty = (analysis.penalties || []).reduce(function (sum, item) { return sum + Number(item.points || 0); }, 0);
     var weights = analysis.settings.weights;
@@ -127,14 +128,14 @@
     var labels = {};
     var sliders = rows.map(function (row) {
       values[row.key] = start[row.key];
-      labels[row.key] = el('b', { text: start[row.key] + '%' });
+      labels[row.key] = el('b', { text: ui.num(start[row.key]) + '%' });
       var input = el('input', {
-        type: 'range', min: '0', max: '100', step: '1', value: String(start[row.key]),
+        type: 'range', min: '0', max: '100', step: '0.1', value: String(start[row.key]),
         'aria-label': row.label + ' what-if value'
       });
       input.addEventListener('input', function () {
         values[row.key] = Number(input.value);
-        labels[row.key].textContent = input.value + '%';
+        labels[row.key].textContent = ui.num(input.value) + '%';
         update();
       });
       return el('label', { class: 'sim-row' },
@@ -148,18 +149,20 @@
     var result = el('div', { class: 'sim-result' },
       el('div', null, el('span', { text: 'Projected score' }), scoreOut),
       el('div', null, el('span', { text: 'Projected band' }), bandOut),
-      el('p', { text: 'Current penalties of ' + ui.num(Math.abs(penalty)) + ' points stay included. This is a planning aid, not a prediction.' })
+      el('p', {
+        text: penalty
+          ? 'The trend penalty of ' + ui.num(Math.abs(penalty)) + ' points stays included. This is a planning aid, not a prediction.'
+          : 'No trend penalty currently applies. This is a planning aid, not a prediction.'
+      })
     );
 
+    /* Mirrors core riskScore exactly: round each weighted part, add penalties, round again. */
     function update() {
-      var available = [
-        [values.attendance, Number(weights.attendance)],
-        [values.coursework, Number(weights.coursework)],
-        [values.marks, Number(weights.marks)]
-      ].filter(function (pair) { return pair[1] > 0; });
-      var totalWeight = available.reduce(function (sum, pair) { return sum + pair[1]; }, 0) || 1;
-      var base = available.reduce(function (sum, pair) { return sum + pair[0] * pair[1]; }, 0) / totalWeight;
-      var score = Math.max(0, Math.min(100, Math.round((base + penalty) * 10) / 10));
+      var score = round1(round1(values.attendance * Number(weights.attendance || 0) / 100) +
+        round1(values.coursework * Number(weights.coursework || 0) / 100) +
+        round1(values.marks * Number(weights.marks || 0) / 100) +
+        penalty);
+      score = Math.max(0, Math.min(100, score));
       var level = score >= thresholds.onTrack ? 'low' : score >= thresholds.watch ? 'medium' : 'high';
       scoreOut.textContent = ui.num(score);
       bandOut.textContent = level === 'low' ? 'On track' : level === 'medium' ? 'Watch closely' : 'Needs support';

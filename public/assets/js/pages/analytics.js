@@ -14,6 +14,8 @@
     subjectId: '', sectionId: '', detail: null,
     detailHost: null, subjectSelect: null, sectionSelect: null, dashboardSubjectSelect: null
   };
+  var detailToken = 0;
+  var dashboardToken = 0;
 
   function updateQuery() {
     var params = new URLSearchParams(window.location.search);
@@ -301,15 +303,17 @@
 
   function loadDetail() {
     if (!state.subjectId) return Promise.resolve();
+    var token = ++detailToken;
     state.detail = null;
     renderDetail();
     return EG.api.get('/api/analytics/subject/' + encodeURIComponent(state.subjectId), {
       sectionId: state.sectionId || undefined
     }).then(function (data) {
+      if (token !== detailToken) return;
       state.detail = data;
       renderDetail();
     }).catch(function (error) {
-      if (error.status === 401) return;
+      if (error.status === 401 || token !== detailToken) return;
       state.detail = null;
       var host = document.getElementById('analytics-subject-detail');
       if (host) {
@@ -321,16 +325,18 @@
   }
 
   function loadDashboard() {
+    var token = ++dashboardToken;
     var params = state.dashboardSubjectId ? { subjectId: state.dashboardSubjectId } : {};
     return Promise.all([
       EG.api.get('/api/analytics/dashboard', params),
       EG.api.get('/api/analytics/fairness')
     ]).then(function (results) {
+      if (token !== dashboardToken) return;
       state.dashboard = results[0];
       state.fairness = results[1];
       renderChrome(state.dashboard, state.fairness);
     }).catch(function (error) {
-      if (error.status === 401) return;
+      if (error.status === 401 || token !== dashboardToken) return;
       pages.mount({
         title: 'Analytics',
         subtitle: 'Analytics could not be loaded',

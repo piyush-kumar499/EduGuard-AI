@@ -15,6 +15,7 @@
     data: null, rows: [], sectionSelect: null, search: null,
     chipsHost: null, legendHost: null, tableHost: null, kpiHost: null
   };
+  var loadToken = 0;
 
   function scaleFor(value) {
     if (value === null || value === undefined || value === '' || !Number.isFinite(Number(value))) return null;
@@ -162,15 +163,17 @@
   }
 
   function load() {
+    var token = ++loadToken;
     updateQuery();
     return EG.api.get('/api/analytics/heatmap', {
       sectionId: state.sectionId || undefined,
       q: state.q || undefined
     }).then(function (data) {
+      if (token !== loadToken) return;
       state.data = data;
       renderAll();
     }).catch(function (error) {
-      if (error.status === 401) return;
+      if (error.status === 401 || token !== loadToken) return;
       if (state.tableHost) {
         state.tableHost.textContent = '';
         state.tableHost.appendChild(ui.errorState(error, load));

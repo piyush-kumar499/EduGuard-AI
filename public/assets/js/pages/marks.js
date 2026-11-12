@@ -13,6 +13,7 @@
     assessments: [], types: [], data: null, grid: null,
     listHost: null, headHost: null, kpiHost: null, gridHost: null, busy: false
   };
+  var loadToken = 0;
 
   function current() {
     return (state.assessments || []).find(function (item) { return item.id === state.selectedId; }) || null;
@@ -221,6 +222,7 @@
   }
 
   function load() {
+    var token = ++loadToken;
     if (!pages.pairs().length) {
       pages.mount({
         title: 'Marks',
@@ -232,6 +234,7 @@
     pages.mount({ title: 'Marks', subtitle: 'Loading the marks workspace…', content: ui.skeletonPage() });
     var p = pair();
     return EG.api.get('/api/assessments', p).then(function (list) {
+      if (token !== loadToken) return null;
       state.assessments = list.assessments || [];
       state.types = list.types || [];
       if (!state.selectedId) {
@@ -247,6 +250,7 @@
         return null;
       }
       return EG.api.get('/api/assessments/' + encodeURIComponent(state.selectedId) + '/marks').then(function (data) {
+        if (token !== loadToken) return null;
         layout(data);
         return data;
       });

@@ -34,7 +34,10 @@
     window.history.replaceState({}, '', window.location.pathname + (text ? '?' + text : ''));
   }
 
+  var fetchToken = 0;
+
   function fetchRows() {
+    var token = ++fetchToken;
     writeQuery();
     return EG.api.get('/api/students', {
       q: state.q || undefined,
@@ -46,6 +49,7 @@
       limit: state.limit,
       offset: state.offset
     }).then(function (data) {
+      if (token !== fetchToken) return;
       state.data = data;
       render(data);
     });

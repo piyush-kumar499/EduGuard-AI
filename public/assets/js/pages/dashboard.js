@@ -10,6 +10,7 @@
 
   var PAGE_SIZE = 9;
   var state = { sectionId: '', subjectId: '', page: 0 };
+  var loadToken = 0;
 
   function readQuery() {
     var params = new URLSearchParams(window.location.search);
@@ -338,6 +339,7 @@
   }
 
   function load() {
+    var token = ++loadToken;
     writeQuery();
     pages.mount({ title: 'Dashboard', subtitle: 'Loading your workspace…', content: ui.skeletonPage() });
     return Promise.all([
@@ -350,6 +352,7 @@
         sort: 'priority'
       })
     ]).then(function (result) {
+      if (token !== loadToken) return;
       render(result[0], result[1], EG.session);
     });
   }
