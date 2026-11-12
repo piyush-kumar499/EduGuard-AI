@@ -92,7 +92,10 @@
         el('div', { class: 'btn-row mt-2' },
           el('button', { class: 'btn btn--sm btn--primary', type: 'button', onClick: function () { openSubject(card); } }, el('span', { html: icon('analytics', 13) }), 'Analytics'),
           el('a', { class: 'btn btn--sm', href: '/marks' + EG.api.query({ subjectId: card.subjectId, sectionId: card.sectionId }) }, el('span', { html: icon('marks', 13) }), 'Marks'),
-          el('a', { class: 'btn btn--sm btn--ghost', href: '/reports' + EG.api.query({ subjectId: card.subjectId, sectionId: card.sectionId }) }, el('span', { html: icon('reports', 13) }), 'Report')
+          el('a', { class: 'btn btn--sm btn--ghost', href: '/reports' + EG.api.query({ subjectId: card.subjectId, sectionId: card.sectionId }) }, el('span', { html: icon('reports', 13) }), 'Report'),
+          EG.session && EG.session.user.role === 'HOD'
+            ? el('a', { class: 'btn btn--sm btn--ghost', href: '/structure' + EG.api.query({ subjectId: card.subjectId }) }, el('span', { html: icon('structure', 13) }), 'Structure')
+            : null
         )
       )
     });

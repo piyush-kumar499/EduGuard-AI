@@ -304,6 +304,24 @@ html[data-theme="dark"] .select {
   text-transform: uppercase;
   white-space: nowrap;
 }
+.th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.th-sort:hover, .th-sort:focus-visible { color: var(--ink); }
+.th-sort.is-active { color: var(--brand-ink, var(--brand)); }
+.table tbody tr.is-clickable { cursor: pointer; }
+.table tbody tr.is-clickable:hover { background: var(--surface-3); }
 .table td {
   padding: 10px var(--sp-3);
   border-bottom: 1px solid var(--line);

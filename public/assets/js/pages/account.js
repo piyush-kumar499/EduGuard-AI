@@ -267,12 +267,80 @@
 
     var signOutButton = el('button', { class: 'btn btn--danger-ghost', type: 'button', onClick: function () { EG.shell.signOut(); } },
       el('span', { html: icon('logout', 15) }), 'Sign out of this device');
+    var signOutOthers = el('button', { class: 'btn btn--sm', type: 'button', hidden: true }, 'Sign out other devices');
+    var sessionsHost = el('div', { class: 'stack--sm', 'aria-live': 'polite' },
+      el('p', { class: 'xs faint', text: 'Loading active sessions…' }));
+
+    function renderSessions(items) {
+      sessionsHost.textContent = '';
+      if (!items.length) {
+        sessionsHost.appendChild(el('p', { class: 'xs faint', text: 'No active sessions were found.' }));
+        signOutOthers.hidden = true;
+        return;
+      }
+      var rows = el('div', { class: 'list-rows' });
+      items.forEach(function (item) {
+        rows.appendChild(el('div', { class: 'list-row' },
+          el('div', { class: 'list-row__main' },
+            el('div', { class: 'list-row__title' },
+              item.device || 'Browser',
+              item.current ? el('span', { class: 'pill pill--low', style: { marginLeft: '6px' }, text: 'This device' }) : null
+            ),
+            el('div', { class: 'list-row__sub', text: item.ip + ' · signed in ' + ui.dateTime(item.createdAt) })
+          ),
+          item.current ? null : el('button', {
+            class: 'btn btn--sm', type: 'button',
+            onClick: function () {
+              ui.confirm({
+                title: 'Revoke this session?',
+                message: 'This device will be signed out and will need to sign in again. Other sessions stay active.',
+                confirmLabel: 'Revoke session', danger: true
+              }).then(function (ok) {
+                if (!ok) return;
+                EG.api.del('/api/auth/sessions/' + encodeURIComponent(item.id), {}).then(function (result) {
+                  if (result && result.signedOut) { window.location.replace('/login'); return; }
+                  ui.toast('Session revoked.', 'success');
+                  loadSessions();
+                }).catch(function (error) { ui.toast(error.message, 'error'); });
+              });
+            }
+          }, 'Revoke')
+        ));
+      });
+      sessionsHost.appendChild(rows);
+      signOutOthers.hidden = !items.some(function (item) { return !item.current; });
+    }
+
+    function loadSessions() {
+      return EG.api.get('/api/auth/sessions').then(function (data) {
+        renderSessions(data.items || []);
+      }).catch(function (error) {
+        if (error.status === 401) return;
+        sessionsHost.textContent = '';
+        sessionsHost.appendChild(el('p', { class: 'xs faint', text: error.message || 'Sessions could not be loaded.' }));
+      });
+    }
+
+    signOutOthers.addEventListener('click', function () {
+      ui.confirm({
+        title: 'Sign out other devices?',
+        message: 'Every other active session will be signed out. This device stays signed in.',
+        confirmLabel: 'Sign out others', danger: true
+      }).then(function (ok) {
+        if (!ok) return;
+        pages.busy(signOutOthers, EG.api.del('/api/auth/sessions', {}).then(function (result) {
+          ui.toast((result.revoked || 0) + ' ' + ui.plural(result.revoked || 0, 'session') + ' signed out.', 'success');
+          loadSessions();
+        }).catch(function (error) { ui.toast(error.message, 'error'); }));
+      });
+    });
+
     var securityCard = pages.card({
-      title: 'Session',
+      title: 'Active sessions',
       subtitle: 'Signed in with a secure cookie',
       body: el('div', { class: 'stack' },
-        el('p', { class: 'small muted', text: 'Sessions are signed, HttpOnly and expire automatically. Deactivating an account ends every session immediately.' }),
-        el('div', { class: 'btn-row' }, signOutButton)
+        sessionsHost,
+        el('div', { class: 'btn-row' }, signOutOthers, signOutButton)
       )
     });
 
@@ -291,6 +359,7 @@
     if (state.force) {
       setTimeout(function () { state.current.focus(); }, 80);
     }
+    loadSessions();
     return Promise.resolve();
   });
 })();

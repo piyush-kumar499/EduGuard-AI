@@ -9,14 +9,20 @@
   var icon = ui.icon;
 
   var PAGE_SIZE = 9;
-  var state = { sectionId: '', subjectId: '', page: 0 };
+  var state = { sectionId: '', subjectId: '', page: 0, q: '', band: '', sort: 'priority', direction: 'desc' };
   var loadToken = 0;
+  var tableToken = 0;
+  var tableHost = null;
 
   function readQuery() {
     var params = new URLSearchParams(window.location.search);
     state.sectionId = params.get('sectionId') || '';
     state.subjectId = params.get('subjectId') || '';
     state.page = Math.max(0, Number(params.get('page')) || 0);
+    state.q = params.get('q') || '';
+    state.band = params.get('band') || '';
+    state.sort = params.get('sort') || 'priority';
+    state.direction = params.get('direction') === 'asc' ? 'asc' : 'desc';
   }
 
   function writeQuery() {
@@ -24,6 +30,10 @@
     if (state.sectionId) params.set('sectionId', state.sectionId);
     if (state.subjectId) params.set('subjectId', state.subjectId);
     if (state.page) params.set('page', String(state.page));
+    if (state.q) params.set('q', state.q);
+    if (state.band) params.set('band', state.band);
+    if (state.sort && state.sort !== 'priority') params.set('sort', state.sort);
+    if (state.sort && state.sort !== 'priority' && state.direction === 'asc') params.set('direction', 'asc');
     var text = params.toString();
     window.history.replaceState({}, '', window.location.pathname + (text ? '?' + text : ''));
   }
@@ -144,54 +154,172 @@
     });
   }
 
+  function tableParams() {
+    return {
+      q: state.q || undefined,
+      sectionId: state.sectionId || undefined,
+      subjectId: state.subjectId || undefined,
+      band: state.band || undefined,
+      sort: state.sort,
+      direction: state.direction,
+      limit: PAGE_SIZE,
+      offset: state.page * PAGE_SIZE
+    };
+  }
+
+  function refreshTable(options) {
+    var token = ++tableToken;
+    writeQuery();
+    return EG.api.get('/api/students', tableParams()).then(function (data) {
+      if (token !== tableToken || !tableHost) return;
+      tableHost.textContent = '';
+      tableHost.appendChild(studentTable(data));
+      if (options && options.focusSearch) {
+        var input = tableHost.querySelector('input[type=search]');
+        if (input) {
+          input.focus();
+          var value = input.value;
+          try { input.setSelectionRange(value.length, value.length); } catch (error) { /* unsupported */ }
+        }
+      }
+    }).catch(function (error) {
+      if (error.status === 401 || token !== tableToken) return;
+      ui.toast(error.message, 'error');
+    });
+  }
+
+  function sortHeader(label, key, numeric) {
+    var active = state.sort === key;
+    var sortDir = active ? (state.direction === 'asc' ? 'desc' : 'asc') : (numeric ? 'desc' : 'asc');
+    return el('th', { class: numeric ? 'num' : null, 'aria-sort': active ? (state.direction === 'asc' ? 'ascending' : 'descending') : 'none' },
+      el('button', {
+        class: 'th-sort' + (active ? ' is-active' : ''), type: 'button',
+        title: 'Sort by ' + label,
+        onClick: function () {
+          state.sort = key;
+          state.direction = sortDir;
+          state.page = 0;
+          refreshTable();
+        }
+      }, label, active ? el('span', { html: icon(state.direction === 'asc' ? 'arrowUp' : 'arrowDown', 11) }) : null)
+    );
+  }
+
+  function trendCell(value) {
+    var delta = Number(value);
+    if (!Number.isFinite(delta) || Math.abs(delta) < 0.05) return el('td', { class: 'num faint', text: '—' });
+    var good = delta > 0;
+    return el('td', { class: 'num', style: { color: good ? 'var(--success)' : 'var(--danger)' } },
+      el('span', { html: icon(good ? 'arrowUp' : 'arrowDown', 11) }),
+      (good ? '+' : '') + ui.num(delta, 1)
+    );
+  }
+
   function studentTable(students) {
     var rows = students.rows || [];
-    var body = el('tbody');
-    rows.forEach(function (row) {
-      body.appendChild(el('tr', null,
-        el('td', { class: 'mono', text: row.roll }),
-        el('td', null, el('a', { class: 'row-link strong', href: pages.studentHref(row.id), text: row.name }), el('div', { class: 'person__sub', text: row.sectionName })),
-        el('td', { class: 'num', text: ui.pct(row.attendance) }),
-        el('td', { class: 'num', text: ui.pct(row.marks) }),
-        el('td', { class: 'num', text: row.hasData ? ui.num(row.score, 1) : '—' }),
-        el('td', null, el('span', { html: ui.levelPill(row.level, row.levelLabel) }))
-      ));
-    });
     var total = students.total || 0;
     var pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
     var current = Math.min(state.page, pageCount - 1);
+    var start = total ? current * PAGE_SIZE + 1 : 0;
+    var end = Math.min(total, current * PAGE_SIZE + rows.length);
+
+    var search = el('input', {
+      class: 'input input--search', type: 'search', placeholder: 'Search name, roll or section…',
+      'aria-label': 'Search students', value: state.q
+    });
+    var timer = null;
+    search.addEventListener('input', function () {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(function () {
+        state.q = search.value.trim();
+        state.page = 0;
+        refreshTable({ focusSearch: true });
+      }, 300);
+    });
+
+    var bands = [['', 'All bands'], ['high', 'Needs support'], ['medium', 'Watch'], ['low', 'On track']];
+    var chips = el('div', { class: 'chips' }, bands.map(function (pair) {
+      return el('button', {
+        class: 'chip' + (state.band === pair[0] ? ' is-active' : ''), type: 'button',
+        'aria-pressed': state.band === pair[0] ? 'true' : 'false',
+        onClick: function () {
+          state.band = pair[0];
+          state.page = 0;
+          refreshTable();
+        }
+      }, pair[1]);
+    }));
+
+    var body = el('tbody');
+    rows.forEach(function (row) {
+      body.appendChild(el('tr', {
+        class: 'is-clickable',
+        onClick: function (event) {
+          if (event.target && event.target.closest && event.target.closest('a, button')) return;
+          window.location.href = pages.studentHref(row.id);
+        }
+      },
+        el('td', null,
+          el('div', { class: 'row gap-2' },
+            el('span', { class: 'avatar avatar--sm', text: ui.initials(row.name) }),
+            el('div', null,
+              el('a', { class: 'row-link strong', href: pages.studentHref(row.id), text: row.name }),
+              el('div', { class: 'person__sub mono', text: row.roll })
+            )
+          )
+        ),
+        el('td', { text: row.sectionName }),
+        el('td', { class: 'num', text: ui.pct(row.attendance) }),
+        el('td', { class: 'num', text: ui.pct(row.marks) }),
+        el('td', { class: 'num', text: row.hasData ? ui.num(row.score, 1) : '—' }),
+        el('td', null, el('span', { html: ui.levelPill(row.level, row.levelLabel) })),
+        trendCell(row.markDelta)
+      ));
+    });
+
     var pager = el('div', { class: 'row row--between gap-3 mt-3' },
-      el('span', { class: 'xs faint', text: total + ' ' + ui.plural(total, 'student') + ' in view' }),
+      el('span', { class: 'xs faint', text: total ? 'Showing ' + start + '–' + end + ' of ' + total + ' ' + ui.plural(total, 'student') : 'No students match this view.' }),
       el('div', { class: 'btn-row' },
         el('button', {
           class: 'btn btn--sm', type: 'button', disabled: current === 0 ? 'disabled' : null,
-          onClick: function () { state.page = Math.max(0, current - 1); load(); }
-        }, el('span', { html: icon('arrowLeft', 13) }), 'Prev'),
+          onClick: function () { state.page = Math.max(0, current - 1); refreshTable(); }
+        }, el('span', { html: icon('arrowLeft', 13) }), 'Previous'),
         el('span', { class: 'xs muted', text: 'Page ' + (current + 1) + ' of ' + pageCount }),
         el('button', {
           class: 'btn btn--sm', type: 'button', disabled: current >= pageCount - 1 ? 'disabled' : null,
-          onClick: function () { state.page = Math.min(pageCount - 1, current + 1); load(); }
+          onClick: function () { state.page = Math.min(pageCount - 1, current + 1); refreshTable(); }
         }, 'Next', el('span', { html: icon('arrowRight', 13) }))
       )
     );
+
     return pages.card({
       title: 'Student overview',
       subtitle: 'The whole cohort, ranked by support priority',
-      body: rows.length
-        ? el('div', null,
-          el('div', { class: 'table-wrap' },
-            el('table', { class: 'table table--compact' },
-              el('thead', null, el('tr', null,
-                el('th', { text: 'Roll' }), el('th', { text: 'Student' }),
-                el('th', { class: 'num', text: 'Attendance' }), el('th', { class: 'num', text: 'Marks' }),
-                el('th', { class: 'num', text: 'Score' }), el('th', { text: 'Band' })
-              )),
-              body
-            )
-          ),
-          pager
-        )
-        : pages.empty('No students in view', 'Adjust the section or subject filters to widen the view.', null, 'students')
+      body: el('div', null,
+        el('div', { class: 'row row--wrap row--between gap-2 mb-3' },
+          el('div', { class: 'row row--wrap gap-2' }, search, chips),
+          el('span', { class: 'xs faint', text: total + ' ' + ui.plural(total, 'student') + ' in view' })
+        ),
+        rows.length
+          ? el('div', null,
+            el('div', { class: 'table-wrap' },
+              el('table', { class: 'table table--compact' },
+                el('thead', null, el('tr', null,
+                  sortHeader('Student', 'name'),
+                  el('th', { text: 'Section' }),
+                  sortHeader('Attendance', 'attendance', true),
+                  sortHeader('Marks', 'marks', true),
+                  sortHeader('Score', 'score', true),
+                  el('th', { text: 'Band' }),
+                  sortHeader('Trend', 'trend', true)
+                )),
+                body
+              )
+            ),
+            pager
+          )
+          : pages.empty('No students in this view', 'Adjust the search, band, section or subject filters to widen the view.', null, 'students')
+      )
     });
   }
 
@@ -318,7 +446,9 @@
         )
       }))
     ));
-    container.appendChild(el('div', { class: 'mt-4' }, studentTable(students)));
+    tableHost = el('div', { class: 'mt-4' });
+    tableHost.appendChild(studentTable(students));
+    container.appendChild(tableHost);
   }
 
   function buildActions(data) {
@@ -340,17 +470,13 @@
 
   function load() {
     var token = ++loadToken;
+    tableToken += 1;
+    tableHost = null;
     writeQuery();
     pages.mount({ title: 'Dashboard', subtitle: 'Loading your workspace…', content: ui.skeletonPage() });
     return Promise.all([
       EG.api.get('/api/analytics/dashboard', { sectionId: state.sectionId || undefined, subjectId: state.subjectId || undefined }),
-      EG.api.get('/api/students', {
-        sectionId: state.sectionId || undefined,
-        subjectId: state.subjectId || undefined,
-        limit: PAGE_SIZE,
-        offset: state.page * PAGE_SIZE,
-        sort: 'priority'
-      })
+      EG.api.get('/api/students', tableParams())
     ]).then(function (result) {
       if (token !== loadToken) return;
       render(result[0], result[1], EG.session);

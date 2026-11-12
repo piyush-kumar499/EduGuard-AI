@@ -267,6 +267,21 @@
       return { label: bucket.bucket, value: bucket.count, color: index < 4 ? 'var(--danger)' : index < 6 ? 'var(--warning)' : 'var(--success)' };
     }), { height: 190, label: 'Distribution of subject percentages' });
 
+    var checkIn = (data.checkIn || []).length
+      ? el('div', { class: 'list-rows' }, data.checkIn.map(function (row) {
+        return el('a', { class: 'list-row', href: pages.studentHref(row.id) },
+          el('div', { class: 'list-row__main' },
+            el('div', { class: 'list-row__title' }, row.name, el('span', { class: 'xs faint', text: ' · ' + row.roll })),
+            el('div', { class: 'list-row__sub', text: row.sectionName + ' · ' + (row.topFactor || 'Core signals are steady') })
+          ),
+          el('span', { class: 'row gap-2' },
+            el('span', { html: ui.levelPill(row.level, row.levelLabel) }),
+            el('span', { class: 'num strong', text: ui.num(row.score, 1) })
+          )
+        );
+      }))
+      : el('p', { class: 'xs faint', text: 'No students are currently flagged in this subject.' });
+
     host.appendChild(el('div', { class: 'stack' },
       el('div', { class: 'analytics-grid' },
         pages.card({ body: el('div', { class: 'stat-list' },
@@ -281,6 +296,15 @@
         pages.card({ title: 'Trend', subtitle: 'Mean percentage by assessment date', body: trend }),
         pages.card({ title: 'Hardest assessments', subtitle: 'Lowest class averages first', body: hardest })
       ),
+      pages.card({
+        title: 'Students to check in with',
+        subtitle: 'Ranked by support priority within this subject',
+        actions: el('a', {
+          class: 'btn btn--sm btn--ghost',
+          href: '/students?band=high' + (state.subjectId ? '&subjectId=' + encodeURIComponent(state.subjectId) : '')
+        }, 'Open full list', el('span', { html: icon('arrowRight', 13) })),
+        body: checkIn
+      }),
       pages.card({
         title: 'Section comparison',
         subtitle: 'Mean subject percentage by section',
