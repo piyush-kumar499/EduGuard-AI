@@ -142,8 +142,20 @@
     return fragment;
   }
 
+  var HONORIFICS = { dr: 1, prof: 1, professor: 1, mr: 1, mrs: 1, ms: 1, miss: 1, shri: 1, smt: 1, sir: 1, madam: 1 };
+
+  function nameParts(name) {
+    var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    while (parts.length > 1 && HONORIFICS[parts[0].replace(/\.$/, '').toLowerCase()]) parts.shift();
+    return parts;
+  }
+
+  function firstName(name) {
+    return nameParts(name)[0] || 'there';
+  }
+
   function initials(name) {
-    var parts = String(name || '?').trim().split(/\s+/).filter(Boolean);
+    var parts = nameParts(name);
     if (!parts.length) return '?';
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -516,6 +528,7 @@
     el: el,
     frag: frag,
     initials: initials,
+    firstName: firstName,
     num: num,
     pct: pct,
     date: date,

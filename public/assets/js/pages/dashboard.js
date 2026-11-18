@@ -325,7 +325,7 @@
 
   function render(data, students, session) {
     var isHod = session.user.role === 'HOD';
-    var firstName = session.user.name.split(' ')[0];
+    var firstName = ui.firstName(session.user.name);
     var hour = new Date().getHours();
     var greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
     var summary = data.summary;

@@ -125,7 +125,7 @@
   transition: background var(--speed) var(--ease);
 }
 .sidebar-user:hover { background: var(--surface-3); }
-.sidebar-user__meta { min-width: 0; line-height: 1.25; }
+.sidebar-user__meta { display: grid; flex: 1 1 auto; min-width: 0; overflow: hidden; line-height: 1.25; }
 .sidebar-user__name { font-weight: 700; font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar-user__role { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
 .sidebar-user svg { margin-left: auto; color: var(--faint); }

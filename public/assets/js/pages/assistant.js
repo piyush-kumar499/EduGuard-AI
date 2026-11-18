@@ -35,7 +35,7 @@
   };
 
   function greeting() {
-    var name = String((state.session && state.session.user && state.session.user.name) || '').split(' ')[0].replace(/\.$/, '') || 'there';
+    var name = (state.session && state.session.user && EG.ui.firstName(state.session.user.name)) || 'there';
     return {
       role: 'assistant',
       content: 'Hello ' + name + '. I can help you think through attendance, coursework, assessments and next steps for a class. I only see your assigned students, and I never need a student name. What would you like to work on?'

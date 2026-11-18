@@ -189,7 +189,7 @@
     }
     var first = plan[0];
     return {
-      summary: analysis.student.name.split(' ')[0] + ' is currently in the ' + analysis.levelLabel.toLowerCase() +
+      summary: ui.firstName(analysis.student.name) + ' is currently in the ' + analysis.levelLabel.toLowerCase() +
         ' band with a support score of ' + ui.num(analysis.score) + '/100. ' +
         (risky[0] ? risky[0].text : 'The core signals are steady.') +
         ' Small, consistent changes over the next two weeks are likely to help most.',

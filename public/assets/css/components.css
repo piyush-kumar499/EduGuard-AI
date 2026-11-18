@@ -402,7 +402,7 @@ html[data-theme="dark"] .select {
   border-radius: var(--radius-pill);
   background: var(--surface-3);
 }
-.meter__fill { height: 100%; border-radius: inherit; background: var(--brand); transition: width 400ms var(--ease); }
+.meter__fill { display: block; height: 100%; border-radius: inherit; background: var(--brand); transition: width 400ms var(--ease); }
 .meter__fill--high { background: var(--danger); }
 .meter__fill--medium { background: var(--warning); }
 .meter__fill--low { background: var(--success); }
@@ -706,8 +706,8 @@ html[data-theme="dark"] .select {
 .bars { display: grid; gap: 10px; }
 .bar-row { display: grid; grid-template-columns: minmax(110px, 0.9fr) minmax(0, 2fr) 42px; align-items: center; gap: 10px; font-size: var(--fs-sm); }
 .bar-row__label { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bar-row__track { height: 8px; overflow: hidden; border-radius: var(--radius-pill); background: var(--surface-3); }
-.bar-row__fill { height: 100%; border-radius: inherit; background: var(--brand); }
+.bar-row__track { display: block; height: 8px; overflow: hidden; border-radius: var(--radius-pill); background: var(--surface-3); }
+.bar-row__fill { display: block; height: 100%; border-radius: inherit; background: var(--brand); }
 .bar-row__value { color: var(--muted); font-size: var(--fs-xs); font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ------------------------------------------------------------------ score ring */
