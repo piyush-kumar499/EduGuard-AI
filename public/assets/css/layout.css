@@ -21,14 +21,25 @@
 .sidebar__brand {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 4px;
   min-height: var(--topbar-h);
-  padding: 0 var(--sp-5);
+  padding: 0 var(--sp-4) 0 var(--sp-5);
   border-bottom: 1px solid var(--line);
   color: var(--ink);
   text-decoration: none;
 }
 .sidebar__brand:hover { color: var(--ink); }
+.brand-home {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+.brand-home:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
 .brand-mark {
   display: grid;
   flex: 0 0 auto;
@@ -39,17 +50,15 @@
   background: linear-gradient(150deg, #6366f1, #4338ca 58%, #312e81);
   box-shadow: 0 8px 18px -10px rgb(67 56 202 / 80%), inset 0 1px 0 rgb(255 255 255 / 35%);
   color: #fff;
+  transition: opacity 120ms var(--ease), transform 120ms var(--ease);
 }
 .brand-mark svg { width: 20px; height: 20px; stroke-width: 2; }
 .brand-text {
   display: grid;
   min-width: 0;
-  border-radius: 8px;
   color: inherit;
   line-height: 1.15;
-  text-decoration: none;
 }
-.brand-text:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
 .brand-name {
   font-family: var(--font-display);
   font-size: 15px;
@@ -58,37 +67,27 @@
 }
 .brand-meta { color: var(--muted); font-size: 11px; }
 
-/* The logo doubles as the sidebar collapse control: the mark swaps for the
-   toggle icon on hover or keyboard focus, so the brand area stays quiet. */
-.brand-toggle {
-  position: relative;
+/* Sits at the end of the brand row while the sidebar is open. In the
+   collapsed rail it overlays the mark instead (see workspace.css). */
+.brand-collapse {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   border: 0;
-  border-radius: 11px;
+  border-radius: 9px;
   background: transparent;
+  color: var(--muted);
   cursor: pointer;
+  transition: background var(--speed) var(--ease), color var(--speed) var(--ease);
 }
-.brand-toggle__icon {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 11px;
-  opacity: 0;
-  transition: opacity 120ms var(--ease);
-}
-.brand-toggle__icon svg { width: 18px; height: 18px; }
-.brand-toggle .brand-mark { transition: opacity 120ms var(--ease), transform 120ms var(--ease); }
-.brand-toggle:hover .brand-mark,
-.brand-toggle:focus-visible .brand-mark { opacity: 0; transform: scale(0.9); }
-.brand-toggle:hover .brand-toggle__icon,
-.brand-toggle:focus-visible .brand-toggle__icon { opacity: 1; }
-.brand-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.brand-collapse:hover { background: var(--surface-3); color: var(--ink); }
+.brand-collapse:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.brand-collapse__icon { display: grid; place-items: center; }
+.brand-collapse__icon svg { width: 18px; height: 18px; transition: transform var(--speed) var(--ease); }
+.app-shell.is-collapsed .brand-collapse__icon svg { transform: rotate(180deg); }
 
 .sidebar__scroll {
   flex: 1 1 auto;

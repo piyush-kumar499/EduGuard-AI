@@ -88,6 +88,10 @@
       button.setAttribute('aria-label', value ? 'Expand sidebar' : 'Collapse sidebar');
       button.setAttribute('title', value ? 'Expand sidebar' : 'Collapse sidebar');
     }
+    // In the rail the toggle covers the logo, so keep the hidden home link
+    // out of the tab order until the sidebar is open again.
+    var home = document.querySelector('.brand-home');
+    if (home) home.tabIndex = value ? -1 : 0;
   }
 
   function navItems() {
@@ -124,16 +128,18 @@
 
     return el('aside', { class: 'sidebar', id: 'sidebar', 'aria-label': 'Sidebar' },
       el('div', { class: 'sidebar__brand' },
+        el('a', { class: 'brand-home', href: '/dashboard', 'aria-label': 'EduGuard dashboard' },
+          el('span', { class: 'brand-mark', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>' }),
+          el('span', { class: 'brand-text' },
+            el('span', { class: 'brand-name', text: 'EduGuard' }),
+            el('span', { class: 'brand-meta', text: isHod() ? 'Department workspace' : 'Teaching workspace' })
+          )
+        ),
         el('button', {
-          class: 'brand-toggle', type: 'button', id: 'sidebar-collapse',
+          class: 'brand-collapse', type: 'button', id: 'sidebar-collapse',
           'aria-label': 'Collapse sidebar', title: 'Collapse sidebar'
         },
-          el('span', { class: 'brand-mark', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>' }),
-          el('span', { class: 'brand-toggle__icon', html: icon('collapse') })
-        ),
-        el('a', { class: 'brand-text', href: '/dashboard' },
-          el('span', { class: 'brand-name', text: 'EduGuard' }),
-          el('span', { class: 'brand-meta', text: isHod() ? 'Department workspace' : 'Teaching workspace' })
+          el('span', { class: 'brand-collapse__icon', html: icon('collapse') })
         )
       ),
       nav,

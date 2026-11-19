@@ -33,13 +33,11 @@
 }
 .sidebar .brand-name { color: #f8fafc; letter-spacing: -0.03em; }
 .sidebar .brand-meta { color: #8fa1b8; }
-.sidebar .brand-text:hover .brand-name { color: #fff; }
-.brand-toggle__icon {
-  background: rgb(148 163 184 / 12%);
-  color: #c7d2fe;
-}
-.brand-toggle__icon svg { transition: transform var(--speed) var(--ease); }
-.app-shell.is-collapsed .brand-toggle__icon svg { transform: rotate(180deg); }
+.sidebar .brand-home:hover .brand-name { color: #fff; }
+.sidebar .brand-collapse { color: #8fa1b8; }
+.sidebar .brand-collapse:hover { background: rgb(148 163 184 / 12%); color: #f8fafc; }
+.sidebar .brand-collapse:focus-visible { outline-color: #a5b4fc; }
+.brand-collapse__icon { opacity: 1; transition: opacity 120ms var(--ease); }
 
 .sidebar__scroll {
   padding: 16px 12px 24px;
@@ -126,7 +124,34 @@
 .app-shell.is-collapsed .voice-link > span:not(.voice-link__icon),
 .app-shell.is-collapsed .sidebar-user__meta,
 .app-shell.is-collapsed .sidebar-user__more { display: none; }
-.app-shell.is-collapsed .sidebar__brand { justify-content: center; padding: 0; }
+.app-shell.is-collapsed .sidebar__brand { position: relative; justify-content: center; padding: 0; }
+/* In the rail the brand row has no space for a separate control, so the
+   toggle moves over the logo and reveals itself on hover or focus. */
+.app-shell.is-collapsed .brand-home {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  flex: 0 0 auto;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.app-shell.is-collapsed .brand-collapse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  transform: translate(-50%, -50%);
+}
+.app-shell.is-collapsed .brand-collapse__icon { opacity: 0; }
+.app-shell.is-collapsed .sidebar__brand:hover .brand-mark,
+.app-shell.is-collapsed .sidebar__brand:has(.brand-collapse:focus-visible) .brand-mark { opacity: 0; transform: scale(0.9); }
+.app-shell.is-collapsed .sidebar__brand:hover .brand-collapse__icon,
+.app-shell.is-collapsed .sidebar__brand:has(.brand-collapse:focus-visible) .brand-collapse__icon { opacity: 1; }
 .app-shell.is-collapsed .nav-group { margin-bottom: 10px; }
 .app-shell.is-collapsed .nav-link { justify-content: center; padding: 10px 0; }
 .app-shell.is-collapsed .voice-link { justify-content: center; padding: 10px 0; }
