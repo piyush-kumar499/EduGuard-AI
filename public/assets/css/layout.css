@@ -41,7 +41,15 @@
   color: #fff;
 }
 .brand-mark svg { width: 20px; height: 20px; stroke-width: 2; }
-.brand-text { display: grid; min-width: 0; line-height: 1.15; }
+.brand-text {
+  display: grid;
+  min-width: 0;
+  border-radius: 8px;
+  color: inherit;
+  line-height: 1.15;
+  text-decoration: none;
+}
+.brand-text:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
 .brand-name {
   font-family: var(--font-display);
   font-size: 15px;
@@ -49,6 +57,38 @@
   letter-spacing: -0.03em;
 }
 .brand-meta { color: var(--muted); font-size: 11px; }
+
+/* The logo doubles as the sidebar collapse control: the mark swaps for the
+   toggle icon on hover or keyboard focus, so the brand area stays quiet. */
+.brand-toggle {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  cursor: pointer;
+}
+.brand-toggle__icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  opacity: 0;
+  transition: opacity 120ms var(--ease);
+}
+.brand-toggle__icon svg { width: 18px; height: 18px; }
+.brand-toggle .brand-mark { transition: opacity 120ms var(--ease), transform 120ms var(--ease); }
+.brand-toggle:hover .brand-mark,
+.brand-toggle:focus-visible .brand-mark { opacity: 0; transform: scale(0.9); }
+.brand-toggle:hover .brand-toggle__icon,
+.brand-toggle:focus-visible .brand-toggle__icon { opacity: 1; }
+.brand-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 .sidebar__scroll {
   flex: 1 1 auto;
@@ -171,7 +211,7 @@
   backdrop-filter: saturate(180%) blur(14px);
   -webkit-backdrop-filter: saturate(180%) blur(14px);
 }
-.topbar__menu { display: none; }
+.topbar .topbar__menu { display: none; }
 .topbar__crumbs {
   display: flex;
   align-items: center;
@@ -340,13 +380,17 @@
   .app-shell { grid-template-columns: minmax(0, 1fr); }
   .sidebar {
     position: fixed;
-    inset: 0 auto 0 0;
+    inset: var(--topbar-h) auto 0 0;
     width: min(300px, 86vw);
+    height: auto;
     transform: translateX(-104%);
     transition: transform 220ms var(--ease);
     box-shadow: var(--shadow-lg);
   }
   body.nav-open .sidebar { transform: none; }
+  /* The top bar keeps the brand and the menu toggle on small screens, so the
+     drawer opens straight into navigation. */
+  .sidebar__brand { display: none; }
   .nav-scrim {
     position: fixed;
     inset: 0;
@@ -358,7 +402,7 @@
   }
   body.nav-open .nav-scrim { opacity: 1; visibility: visible; }
   .topbar { padding: 0 var(--sp-4); }
-  .topbar__menu { display: inline-flex; }
+  .topbar .topbar__menu { display: inline-flex; }
   .page { padding: var(--sp-5) var(--sp-4) var(--sp-8); }
   .auth { grid-template-columns: minmax(0, 1fr); }
   .auth__aside { display: none; }

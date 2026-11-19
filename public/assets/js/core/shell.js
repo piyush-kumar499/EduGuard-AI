@@ -123,9 +123,15 @@
     });
 
     return el('aside', { class: 'sidebar', id: 'sidebar', 'aria-label': 'Sidebar' },
-      el('a', { class: 'sidebar__brand', href: '/dashboard' },
-        el('span', { class: 'brand-mark', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>' }),
-        el('span', { class: 'brand-text' },
+      el('div', { class: 'sidebar__brand' },
+        el('button', {
+          class: 'brand-toggle', type: 'button', id: 'sidebar-collapse',
+          'aria-label': 'Collapse sidebar', title: 'Collapse sidebar'
+        },
+          el('span', { class: 'brand-mark', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>' }),
+          el('span', { class: 'brand-toggle__icon', html: icon('collapse') })
+        ),
+        el('a', { class: 'brand-text', href: '/dashboard' },
           el('span', { class: 'brand-name', text: 'EduGuard' }),
           el('span', { class: 'brand-meta', text: isHod() ? 'Department workspace' : 'Teaching workspace' })
         )
@@ -135,10 +141,6 @@
         el('button', { class: 'voice-link', type: 'button', id: 'voice-open' },
           el('span', { class: 'voice-link__icon', html: icon('wave') }),
           el('span', { text: 'Talk to EduGuard' })
-        ),
-        el('button', { class: 'collapse-btn', type: 'button', id: 'sidebar-collapse', 'aria-label': 'Collapse sidebar' },
-          el('span', { class: 'collapse-btn__icon', html: icon('collapse') }),
-          el('span', { text: 'Collapse' })
         ),
         el('button', { class: 'sidebar-user', type: 'button', id: 'sidebar-user', title: session.user.email },
           avatar(session.user.name, 'avatar--brand'),

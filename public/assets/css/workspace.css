@@ -33,8 +33,20 @@
 }
 .sidebar .brand-name { color: #f8fafc; letter-spacing: -0.03em; }
 .sidebar .brand-meta { color: #8fa1b8; }
+.sidebar .brand-text:hover .brand-name { color: #fff; }
+.brand-toggle__icon {
+  background: rgb(148 163 184 / 12%);
+  color: #c7d2fe;
+}
+.brand-toggle__icon svg { transition: transform var(--speed) var(--ease); }
+.app-shell.is-collapsed .brand-toggle__icon svg { transform: rotate(180deg); }
 
-.sidebar__scroll { padding: 16px 12px 24px; }
+.sidebar__scroll {
+  padding: 16px 12px 24px;
+  /* Soften the clipped edge when the nav list is longer than the viewport. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent);
+}
 .nav-group { margin-bottom: 22px; }
 .nav-group__label {
   padding: 0 10px;
@@ -76,8 +88,7 @@
   padding: 12px;
   border-top-color: rgb(148 163 184 / 14%);
 }
-.voice-link,
-.collapse-btn {
+.voice-link {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -85,28 +96,18 @@
   padding: 9px 11px;
   border: 0;
   border-radius: 10px;
-  background: transparent;
-  color: #a5b4c8;
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  color: #fff;
   font: inherit;
   font-size: 12.5px;
   font-weight: 700;
   text-align: left;
+  box-shadow: 0 10px 24px -14px rgb(79 70 229 / 80%), inset 0 1px 0 rgb(255 255 255 / 16%);
   transition: background var(--speed) var(--ease), color var(--speed) var(--ease);
 }
-.voice-link {
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
-  color: #fff;
-  box-shadow: 0 10px 24px -14px rgb(79 70 229 / 80%), inset 0 1px 0 rgb(255 255 255 / 16%);
-}
 .voice-link:hover { background: linear-gradient(135deg, #5b52f0, #4f46e5); color: #fff; }
-.voice-link__icon,
-.collapse-btn__icon { display: grid; flex: 0 0 auto; place-items: center; }
-.voice-link svg,
-.collapse-btn svg { width: 16px; height: 16px; }
-.collapse-btn { color: #7c8ca2; }
-.collapse-btn:hover { background: rgb(148 163 184 / 9%); color: #f8fafc; }
-.collapse-btn__icon svg { transition: transform var(--speed) var(--ease); }
-.app-shell.is-collapsed .collapse-btn__icon svg { transform: rotate(180deg); }
+.voice-link__icon { display: grid; flex: 0 0 auto; place-items: center; }
+.voice-link svg { width: 16px; height: 16px; }
 
 .sidebar-user {
   gap: 10px;
@@ -123,14 +124,12 @@
 .app-shell.is-collapsed .nav-text,
 .app-shell.is-collapsed .nav-key,
 .app-shell.is-collapsed .voice-link > span:not(.voice-link__icon),
-.app-shell.is-collapsed .collapse-btn > span:not(.collapse-btn__icon),
 .app-shell.is-collapsed .sidebar-user__meta,
 .app-shell.is-collapsed .sidebar-user__more { display: none; }
 .app-shell.is-collapsed .sidebar__brand { justify-content: center; padding: 0; }
 .app-shell.is-collapsed .nav-group { margin-bottom: 10px; }
 .app-shell.is-collapsed .nav-link { justify-content: center; padding: 10px 0; }
-.app-shell.is-collapsed .voice-link,
-.app-shell.is-collapsed .collapse-btn { justify-content: center; padding: 10px 0; }
+.app-shell.is-collapsed .voice-link { justify-content: center; padding: 10px 0; }
 .app-shell.is-collapsed .sidebar-user { justify-content: center; padding: 4px; }
 .app-shell.is-collapsed .sidebar__foot { padding: 12px 14px; }
 
@@ -475,18 +474,16 @@
   .app-shell,
   .app-shell.is-collapsed { grid-template-columns: minmax(0, 1fr); }
   .app-shell.is-collapsed .sidebar { width: min(300px, 86vw); }
-  .app-shell.is-collapsed .brand-text,
   .app-shell.is-collapsed .nav-group__label,
   .app-shell.is-collapsed .nav-text,
   .app-shell.is-collapsed .nav-key,
-  .app-shell.is-collapsed .voice-link > span:not(.voice-link__icon),
-  .app-shell.is-collapsed .collapse-btn > span:not(.collapse-btn__icon),
-  .app-shell.is-collapsed .sidebar-user__meta { display: revert; }
+  .app-shell.is-collapsed .voice-link > span:not(.voice-link__icon) { display: revert; }
+  .app-shell.is-collapsed .brand-text,
+  .app-shell.is-collapsed .sidebar-user__meta { display: grid; }
   .app-shell.is-collapsed .sidebar__brand { justify-content: flex-start; padding: 0 18px; }
   .app-shell.is-collapsed .nav-link { justify-content: flex-start; padding: 9px 11px; }
   .app-shell.is-collapsed .voice-link { justify-content: flex-start; padding: 9px 11px; }
   .app-shell.is-collapsed .sidebar-user { justify-content: flex-start; padding: 8px; }
-  .collapse-btn { display: none; }
   .global-search { display: none; }
   .quick-wrap,
   .alerts-wrap { display: none; }
